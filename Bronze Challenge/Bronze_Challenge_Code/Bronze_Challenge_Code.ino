@@ -104,17 +104,19 @@ void loop() {
   int current_left = digitalRead(L_EYE);
   int current_right = digitalRead(R_EYE);
 
-  if (current_left != prev_left || current_right != prev_right) {
-    Serial.print("Left Sensor Change: ");
-    Serial.print(current_left == HIGH ? "HIGH" : "LOW");
-    Serial.print("Right Sensor Change: ");
-    Serial.println(current_right == HIGH ? "HIGH" : "LOW");
-  } else{
-    Serial.print("Left Sensor: ");
-    Serial.print(current_left == HIGH ? "HIGH" : "LOW");
-    Serial.print("Right Sensor: ");
-    Serial.print(current_right == HIGH ? "HIGH" : "LOW");
-  }
+
+  // Debug code for IR Sensor State Checking
+  // if (current_left != prev_left || current_right != prev_right) {
+  //   Serial.print("Left Sensor Change: ");
+  //   Serial.print(current_left == HIGH ? "HIGH" : "LOW");
+  //   Serial.print("Right Sensor Change: ");
+  //   Serial.println(current_right == HIGH ? "HIGH" : "LOW");
+  // } else{
+  //   Serial.print("Left Sensor: ");
+  //   Serial.print(current_left == HIGH ? "HIGH" : "LOW");
+  //   Serial.print("Right Sensor: ");
+  //   Serial.print(current_right == HIGH ? "HIGH" : "LOW");
+  // }
   
 ////--- Readings and Outputs ---//
 
