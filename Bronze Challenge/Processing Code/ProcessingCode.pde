@@ -24,20 +24,17 @@ void draw() {
 public void Disconnect(int theValue){
   if (myClient.active()){
     myClient.write("q");
-    println("Button pressed!");
   }
 }
 
 public void GO(int theValue){
   if (myClient.active()){
     myClient.write("g");
-    println("Button pressed!");
   }
 }
 
 public void STOP(int theValue){
   if (myClient.active()){
     myClient.write("s");
-    println("Button pressed!");
   }
 }

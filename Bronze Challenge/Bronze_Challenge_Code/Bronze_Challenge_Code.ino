@@ -1,6 +1,5 @@
 // Group X14
 
-
 //---WiFi Setup---//
 
 #include <WiFiS3.h>
@@ -10,6 +9,65 @@ char pass[] = "Harrybarry2004";
 
 WiFiServer server(80);
 
+
+//--- WiFi Connecting LED Matrix --- //
+#include "Arduino_LED_Matrix.h"
+ArduinoLEDMatrix matrix;
+
+byte full_wifi[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0 },
+  { 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0 },
+  { 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0 },
+  { 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+byte one_wifi[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+byte two_wifi[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+byte three_wifi[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0 },
+  { 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0 },
+  { 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+byte blank[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
 
 //---Arduino pin definitions---//
 
@@ -89,14 +147,21 @@ int prev_right = HIGH;
 
 void setup() {
   Serial.begin(9600);
+  matrix.begin();
 
   // Wifi Connection
     // Attempt to connect to WiFi
     Serial.print("Connecting to WiFi...");
+    matrix.renderBitmap(one_wifi, 8, 12);
+    delay(200);
+    matrix.renderBitmap(two_wifi, 8, 12);
+    delay(200);
+    matrix.renderBitmap(three_wifi, 8, 12);
+    delay(200);
     while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
-        Serial.print(".");
-        delay(1000);
+      delay(1000);
     }
+    matrix.renderBitmap(full_wifi, 8, 12);
 
     Serial.println("\nConnected to WiFi");
 
@@ -121,13 +186,22 @@ void loop() {
 
   //--- Start/Stop boolean---//
   bool running = false;
-
+  
   WiFiClient client = server.available(); 
 
   if (client) {  // Check if a client has connected
+      matrix.renderBitmap(blank, 8, 12);
+      delay(200);
+      matrix.renderBitmap(full_wifi, 8, 12);
+      delay(200);
+      matrix.renderBitmap(blank, 8, 12);
+      delay(200);
+      matrix.renderBitmap(full_wifi, 8, 12);
+      delay(200);
+      matrix.renderBitmap(blank, 8, 12);
+      delay(200);
       Serial.println("Client connected");
       client.println("Connected to arduino");  
-
 
       while (client.connected()) {
         if (client.available()) {
