@@ -1,5 +1,16 @@
 // Group X14
 
+
+//---WiFi Setup---//
+
+#include <WiFiS3.h>
+
+char ssid[] = "Leddy";
+char pass[] = "Harrybarry2004";
+
+WiFiServer server(80);
+
+
 //---Arduino pin definitions---//
 
 #define L_EYE 7         //left IR Sensor
@@ -77,7 +88,23 @@ int prev_left = HIGH;
 int prev_right = HIGH;
 
 void setup() {
- Serial.begin(9600);
+  Serial.begin(9600);
+
+  // Wifi Connection
+    // Attempt to connect to WiFi
+    Serial.print("Connecting to WiFi...");
+    while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
+        Serial.print(".");
+        delay(1000);
+    }
+
+    Serial.println("\nConnected to WiFi");
+
+    // Get and print the IP address
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    server.begin();
   
   //IR Sensors send us signals, we send motors signals
   pinMode(L_EYE, INPUT);
@@ -91,65 +118,100 @@ void setup() {
 
 void loop() {
 
-//--- Wheel Speeds---//
 
-  int speedL= 115;
-  int speedR= 90;
-  int turnL = 120;
-  int turnR = 120;
+  //--- Start/Stop boolean---//
+  bool running = false;
 
-//--- Sensor Readings---//
+  WiFiClient client = server.available(); 
 
-  //take in what the IR Sensor is giving us
-  int current_left = digitalRead(L_EYE);
-  int current_right = digitalRead(R_EYE);
+  if (client) {  // Check if a client has connected
+      Serial.println("Client connected");
+      client.println("Connected to arduino");  
 
 
-  // Debug code for IR Sensor State Checking
-  // if (current_left != prev_left || current_right != prev_right) {
-  //   Serial.print("Left Sensor Change: ");
-  //   Serial.print(current_left == HIGH ? "HIGH" : "LOW");
-  //   Serial.print("Right Sensor Change: ");
-  //   Serial.println(current_right == HIGH ? "HIGH" : "LOW");
-  // } else{
-  //   Serial.print("Left Sensor: ");
-  //   Serial.print(current_left == HIGH ? "HIGH" : "LOW");
-  //   Serial.print("Right Sensor: ");
-  //   Serial.print(current_right == HIGH ? "HIGH" : "LOW");
-  // }
-  
-////--- Readings and Outputs ---//
+      while (client.connected()) {
+        if (client.available()) {
 
-  //call forward function
-  if (current_left == HIGH && current_right == HIGH ) { 
-    Forward(speedL, speedR); 
-    }
+          char c = client.read();
 
-  if (current_left == LOW && current_right == HIGH ) { 
-    Left( turnR);
-    while (current_left == LOW ){
-      current_left = digitalRead(L_EYE);
-    }
-    current_left = digitalRead(L_EYE);
-    current_right = digitalRead(R_EYE);
+          if (c != -1){
+            Serial.println(c);
+          }
+
+          // Quit / Disconnect
+          if(c == 'q'){
+            client.stop(); // Close the connection
+            Serial.println("Client disconnected");
+            running = false;
+          }
+
+          // GO!!
+          if (c == 'g'){
+            running = true;
+          }
+          // STOP!!
+          if (c == 's'){
+            running = false;
+          }
+        }
+
+        //--- Line Following Code---//
+        if (running) {
+
+          //--- Wheel Speeds---//
+
+          int speedL= 115;
+          int speedR= 90;
+          int turnL = 120;
+          int turnR = 120;
+
+          //take in what the IR Sensor is giving us
+          int current_left = digitalRead(L_EYE);
+          int current_right = digitalRead(R_EYE);
+          
+          ////--- Readings and Outputs ---//
+
+          //call forward function
+          if (current_left == HIGH && current_right == HIGH ) { 
+            Forward(speedL, speedR); 
+            }
+
+          if (current_left == LOW && current_right == HIGH ) { 
+            Left( turnR);
+            while (current_left == LOW ){
+              current_left = digitalRead(L_EYE);
+            }
+            current_left = digitalRead(L_EYE);
+            current_right = digitalRead(R_EYE);
+          }
+            
+          if (current_left == HIGH && current_right == LOW ) { 
+            Right(turnL); 
+            while (current_right == LOW){
+              current_right = digitalRead(R_EYE);
+            }
+            current_left = digitalRead(L_EYE);
+            current_right = digitalRead(R_EYE);
+          }
+
+          if (current_left == LOW && current_right == LOW ) {
+            Stop();
+          }
+
+            // Update the last sensor states for next check
+          prev_left = current_left;
+          prev_right = current_right;
+          
+          delay(10);  //wait a second
+        }
+
+        if (!running){
+          Stop();
+        }
+      }
   }
-    
-  if (current_left == HIGH && current_right == LOW ) { 
-    Right(turnL); 
-    while (current_right == LOW){
-      current_right = digitalRead(R_EYE);
-    }
-    current_left = digitalRead(L_EYE);
-    current_right = digitalRead(R_EYE);
-  }
 
-  if (current_left == LOW && current_right == LOW ) {
-    Stop();
-  }
 
-    // Update the last sensor states for next check
-  prev_left = current_left;
-  prev_right = current_right;
-  
-  delay(10);  //wait a second
+
+
 }

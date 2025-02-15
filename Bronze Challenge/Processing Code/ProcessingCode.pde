@@ -1,37 +1,43 @@
-import controlP5.*;          //imported library
-import processing.serial.*;  //existing library
-Serial port;                 //sets port
-ControlP5 cp5;               //creates object
-PFont font;                  //set font
+import processing.net.*;
+import controlP5.*;
 
-void setup(){
-size(800, 500);
-//port = new Serial(this, "COM6" <- this is not wifi)
-//setup arduino connection - check how to do this
+ControlP5 cp5;
+Client myClient;
+String data;
 
-//aesthethics - TBD
-font = createFont("Georgia" , 20);   //picked a font
-textFont(font);
-fill(0, 0, 0); //text black
-text("X14 - Buggy Controls", 10, 30);
-line(0, 50, 210, 50);
-line(210, 50, 210, 0);
+void setup() {
+  cp5 = new ControlP5(this);
 
-//Button (theoretically this should work)
-cp5.addButton("GO")
-  .setPosition(50, 100)
-  .setSize(150, 150)
-  .setFont(font)
-  .setColorBackground(color(165, 242, 141))
-  .setColorForeground(color(153, 204, 255))
-  .setColorLabel(color(0,0,0))
-  ;
+  size(400,200);
+  cp5.addButton("Disconnect").setValue(0).setPosition(100,70).setSize(200,19);
+  cp5.addButton("GO").setValue(0).setPosition(100,100).setSize(200,19);
+  cp5.addButton("STOP").setValue(0).setPosition(100,130).setSize(200,19);
+  
+  // Arduino's IP and Port
+  myClient = new Client(this,"192.168.1.22",80);
+  //myClient.write("I am a new client");
+}
+void draw() {
+  if (!myClient.active()) exit();
 }
 
-void draw(){
-  background(173, 216, 230);   //pale blue
+public void Disconnect(int theValue){
+  if (myClient.active()){
+    myClient.write("q");
+    println("Button pressed!");
+  }
 }
 
-void GO(){
-  port.write(1);
+public void GO(int theValue){
+  if (myClient.active()){
+    myClient.write("g");
+    println("Button pressed!");
+  }
+}
+
+public void STOP(int theValue){
+  if (myClient.active()){
+    myClient.write("s");
+    println("Button pressed!");
+  }
 }
