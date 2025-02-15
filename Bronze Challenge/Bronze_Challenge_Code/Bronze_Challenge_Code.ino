@@ -85,8 +85,9 @@ byte blank[8][12] = {
 #define R_MOTOR_IN1 12  //right motor pin 1
 #define R_MOTOR_IN2 13  //right motor pin 2
 
-#define TRIG_PIN 2  // Trig pin connected to D2
-#define ECHO_PIN 4 // Echo pin connected to D4
+#define TRIG_PIN 3  // Trig pin connected to D2
+#define ECHO_PIN 2 // Echo pin connected to D4
+
 
 //---Driving Functions---//
             
@@ -313,6 +314,8 @@ void loop() {
             US_Pulse();
             US_ticker = 0;
           }
+          
+
 
           US_ticker += 1;
           delay(10);  //wait a second
