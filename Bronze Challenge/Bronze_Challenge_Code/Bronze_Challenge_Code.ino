@@ -85,6 +85,9 @@ byte blank[8][12] = {
 #define R_MOTOR_IN1 12  //right motor pin 1
 #define R_MOTOR_IN2 13  //right motor pin 2
 
+#define TRIG_PIN 2  // Trig pin connected to D2
+#define ECHO_PIN 4 // Echo pin connected to D4
+
 //---Driving Functions---//
             
 //         normal speed, normal speed
@@ -141,6 +144,32 @@ void Right(int turnL){
    
 }
 
+//---UltraSonic Sensor--//
+float US_Pulse(){
+  long duration;
+  float dist;
+
+    // Send a short pulse to trigger pin
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Read the pulse duration on the echo pin
+  duration = pulseIn(ECHO_PIN, HIGH); 
+
+  // Convert duration to distance in cm
+  dist = (duration * 0.0343) / 2; // Speed of sound = 0.034 cm/µs (divide by 2 for round-trip)
+
+  // Print the distance to the Serial Monitor
+  Serial.print("Distance: ");
+  Serial.print(dist);
+  Serial.println(" cm");
+
+  return dist;
+}
+
 //initialises a place to hold the previous IR input
 int prev_left = HIGH;
 int prev_right = HIGH;
@@ -150,26 +179,26 @@ void setup() {
   matrix.begin();
 
   // Wifi Connection
-    // Attempt to connect to WiFi
-    Serial.print("Connecting to WiFi...");
-    matrix.renderBitmap(one_wifi, 8, 12);
-    delay(200);
-    matrix.renderBitmap(two_wifi, 8, 12);
-    delay(200);
-    matrix.renderBitmap(three_wifi, 8, 12);
-    delay(200);
-    while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
-      delay(1000);
-    }
-    matrix.renderBitmap(full_wifi, 8, 12);
+  // Attempt to connect to WiFi
+  Serial.print("Connecting to WiFi...");
+  matrix.renderBitmap(one_wifi, 8, 12);
+  delay(200);
+  matrix.renderBitmap(two_wifi, 8, 12);
+  delay(200);
+  matrix.renderBitmap(three_wifi, 8, 12);
+  delay(200);
+  while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
+    delay(1000);
+  }
+  matrix.renderBitmap(full_wifi, 8, 12);
 
-    Serial.println("\nConnected to WiFi");
+  Serial.println("\nConnected to WiFi");
 
-    // Get and print the IP address
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
+  // Get and print the IP address
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
 
-    server.begin();
+  server.begin();
   
   //IR Sensors send us signals, we send motors signals
   pinMode(L_EYE, INPUT);
@@ -179,6 +208,8 @@ void setup() {
   pinMode(R_MOTOR_IN1, OUTPUT);
   pinMode(R_MOTOR_IN2, OUTPUT);
 
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
 }
 
 void loop() {
@@ -186,6 +217,8 @@ void loop() {
 
   //--- Start/Stop boolean---//
   bool running = false;
+  float US_dist;
+  int US_ticker = 0;
   
   WiFiClient client = server.available(); 
 
@@ -276,6 +309,12 @@ void loop() {
           prev_left = current_left;
           prev_right = current_right;
           
+          if (US_ticker >= 50){
+            US_Pulse();
+            US_ticker = 0;
+          }
+
+          US_ticker += 1;
           delay(10);  //wait a second
         }
 
@@ -284,8 +323,4 @@ void loop() {
         }
       }
   }
-
-
-
-
 }
