@@ -4,8 +4,8 @@
 
 #include <WiFiS3.h>
 
-char ssid[] = "iPhone (4)";
-char pass[] = "12345679";
+char ssid[] = "2E10_AP02";
+char pass[] = "TinLizzy";
 
 WiFiServer server(5220);
 
