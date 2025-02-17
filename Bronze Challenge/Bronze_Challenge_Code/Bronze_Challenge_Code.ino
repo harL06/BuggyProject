@@ -168,7 +168,24 @@ float US_Pulse(){
   //Serial.print(dist);
   //Serial.println(" cm");
 
+    if (dist > 400) {  // Discard absurd readings (sensor max is ~400 cm)
+      return -1;  // Return an invalid value
+  }
+
   return dist;
+}
+
+
+float getFilteredDistance() {
+    float sum = 0;
+    int samples = 5;  // Number of readings to average
+    float pulse = 0;
+    for (int i = 0; i < samples; i++) {
+        pulse = US_Pulse();
+        if (pulse != -1) sum += US_Pulse();
+        delay(10);  // Small delay between readings
+    }
+    return sum / samples;  // Return the average distance
 }
 
 //initialises a place to hold the previous IR input
@@ -224,6 +241,9 @@ void loop() {
   
   WiFiClient client = server.available(); 
 
+  char state = 'G';
+
+
   if (client) {  // Check if a client has connected
       matrix.renderBitmap(blank, 8, 12);
       delay(200);
@@ -257,6 +277,7 @@ void loop() {
           // GO!!
           if (c == 'g'){
             running = true;
+            state = 'G';
           }
           // STOP!!
           if (c == 's'){
@@ -278,56 +299,82 @@ void loop() {
           int current_left = digitalRead(L_EYE);
           int current_right = digitalRead(R_EYE);
           
-          ////--- Readings and Outputs ---//
+          //Serial.println(state);
 
-          //call forward function
-          if (current_left == HIGH && current_right == HIGH ) { 
-            Forward(speedL, speedR); 
+          ////--- Readings and Outputs ---//
+          if (current_left != prev_left || current_right != prev_right){
+            //call forward function
+            if (current_left == HIGH && current_right == HIGH ) { 
+              state = 'G';
+              }
+
+            if (current_left == LOW && current_right == HIGH ) { 
+              state = 'L';
+            }
+              
+            if (current_left == HIGH && current_right == LOW ) { 
+              state = 'R';
             }
 
-          if (current_left == LOW && current_right == HIGH ) { 
-            Left( turnR);
-            // while (current_left == LOW ){
-            //   current_left = digitalRead(L_EYE);
-            // }
-            current_left = digitalRead(L_EYE);
-            current_right = digitalRead(R_EYE);
-          }
-            
-          if (current_left == HIGH && current_right == LOW ) { 
-            Right(turnL); 
-            // while (current_right == LOW){
-            //   current_right = digitalRead(R_EYE);
-            // }
-            current_left = digitalRead(L_EYE);
-            current_right = digitalRead(R_EYE);
+            if (current_left == LOW && current_right == LOW ) {
+              state = 'S';
+            }
           }
 
-          if (current_left == LOW && current_right == LOW ) {
-            Stop();
-          }
+          // Stopping distance (cm)
+          int stopping_dist = 20;
 
-            // Update the last sensor states for next check
-          prev_left = current_left;
-          prev_right = current_right;
-          
-          if (US_ticker >= 50){
+
+          if (US_ticker >= 20){
             
-            float distance = US_Pulse();
-            Serial.println("Outside While loop: " + String(distance));
+            float distance = distance = getFilteredDistance();
+            //Serial.println("Outside While loop: " + String(distance));
             client.println(distance);
-            while (distance < 30){
-              distance = US_Pulse();
-              Serial.println(distance);
+            while (distance < stopping_dist){
+              distance = getFilteredDistance();
+              //Serial.println(distance);
               client.println(distance);
               Stop();
-              delay(500);
-              if (distance > 30){
+              state = 'S';
+              delay(600);
+              if (distance > stopping_dist){
+                current_left = digitalRead(L_EYE);
+                current_right = digitalRead(R_EYE);
+                state = 'G';
                 break;
               }
             }
             US_ticker = 0;
           }
+
+
+
+          if (state == 'G') { 
+            Forward(speedL, speedR); 
+          }
+
+          if (state == 'L') { 
+              Left( turnR);
+              current_left = digitalRead(L_EYE);
+              current_right = digitalRead(R_EYE);
+          }
+
+          if (state == 'R') { 
+              Right(turnL); 
+              current_left = digitalRead(L_EYE);
+              current_right = digitalRead(R_EYE);
+          }
+
+          if (state == 'S') {
+              Stop();
+          }
+
+          //else Serial.println("No Change");
+
+          // Update the last sensor states for next check
+          prev_left = current_left;
+          prev_right = current_right;
+
           
 
 
@@ -336,6 +383,7 @@ void loop() {
         }
 
         if (!running){
+          state = 'S';
           Stop();
         }
       }

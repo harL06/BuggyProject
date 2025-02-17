@@ -4,7 +4,8 @@ import controlP5.*;
 
 ControlP5 cp5;
 Client myClient;
-String data;
+
+String lastDistance = "--";  // Store last received value
 
 void setup() {
   cp5 = new ControlP5(this);
@@ -24,20 +25,29 @@ void setup() {
 }
 void draw() {
   
-  background(173,216,230);
+  background(153, 196, 210);  // Clear screen every frame
 
-  if (myClient.active()){
+  if (myClient.active()) {
     String reading = myClient.readStringUntil('\n');
     
-    if (reading != null && reading != "\n" && reading != "\r" && !reading.isEmpty()){
-       trim(reading);
-       String distance = reading;
-       println(distance);
-       text(distance, 10, 30);
-     }
-   
-    
-    //cp5.get(Label.class, "US_Sensor").setText(distance);
+    if (reading != null) {
+      reading = reading.replaceAll("[\\r\\n]+", "").trim();
+      
+      if (!reading.isEmpty()) {  
+        lastDistance = reading;  // Store latest valid reading
+        //println(lastDistance);
+      }
+    }
+  }
+  fill(255);
+  textSize(14);
+  // Display last valid distance even if no new data
+  text("US Sensor Reading: " + lastDistance + "cm", 10, 30);
+  
+  if (float(lastDistance) < 20) {
+    fill(255, 0, 0);
+    textSize(14);
+    text("Buggy Stopping!", 10, 50);
   }
 
 }
