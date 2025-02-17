@@ -1,16 +1,28 @@
 import processing.net.*;
 import controlP5.*;
+import meter.*;  // Import the Meter library
+
+
 
 
 ControlP5 cp5;
 Client myClient;
+
+Meter m;
 
 String lastDistance = "--";  // Store last received value
 
 void setup() {
   cp5 = new ControlP5(this);
 
-  size(400,200);
+  size(800,600);
+  
+  // Create a circular meter (gauge)
+  m = new Meter(this, 400, 0);
+  String[] scaleLabels = {"0", "10", "20", "30"};
+  m.setScaleLabels(scaleLabels);
+  m.setMaxScaleValue(60);
+  m.setTitle("US Distance");
   
   
   
@@ -43,6 +55,7 @@ void draw() {
   textSize(14);
   // Display last valid distance even if no new data
   text("US Sensor Reading: " + lastDistance + "cm", 10, 30);
+  m.updateMeter(int(lastDistance));
   
   if (float(lastDistance) < 20) {
     fill(255, 0, 0);
