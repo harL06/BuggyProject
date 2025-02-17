@@ -1,5 +1,5 @@
-#define TRIG_PIN 3  // Connect Trig to digital pin 2
-#define ECHO_PIN 2  // Connect Echo to digital pin 4
+#define TRIG_PIN 3  // Connect Trig to digital pin 3
+#define ECHO_PIN 2  // Connect Echo to digital pin 2
 
 void setup() {
   Serial.begin(9600);
@@ -8,7 +8,7 @@ void setup() {
 }
 
 void loop() {
-  long duration;
+  float duration;
   float distance;
   
   // Ensure a clean pulse by starting LOW

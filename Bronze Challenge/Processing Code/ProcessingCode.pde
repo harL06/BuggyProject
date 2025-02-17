@@ -14,7 +14,7 @@ void setup() {
   cp5.addButton("STOP").setValue(0).setPosition(100,130).setSize(200,19);
   
   // Arduino's IP and Port
-  myClient = new Client(this,"192.168.1.22",80);
+  myClient = new Client(this,"172.20.10.14",5220);
   //myClient.write("I am a new client");
 }
 void draw() {

@@ -4,10 +4,10 @@
 
 #include <WiFiS3.h>
 
-char ssid[] = "Leddy";
-char pass[] = "Harrybarry2004";
+char ssid[] = "iPhone (4)";
+char pass[] = "12345679";
 
-WiFiServer server(80);
+WiFiServer server(5220);
 
 
 //--- WiFi Connecting LED Matrix --- //
