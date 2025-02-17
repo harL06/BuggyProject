@@ -83,7 +83,7 @@ byte blank[8][12] = {
 #define L_MOTOR_IN1 5   //left motor pin 1
 #define L_MOTOR_IN2 6   //left motor pin 2
 #define R_MOTOR_IN1 12  //right motor pin 1
-#define R_MOTOR_IN2 13  //right motor pin 2
+#define R_MOTOR_IN2 4  //right motor pin 2
 
 #define TRIG_PIN 3  // Trig pin connected to D2
 #define ECHO_PIN 2 // Echo pin connected to D4
@@ -164,9 +164,9 @@ float US_Pulse(){
   dist = (duration * 0.0343) / 2; // Speed of sound = 0.034 cm/µs (divide by 2 for round-trip)
 
   // Print the distance to the Serial Monitor
-  Serial.print("Distance: ");
-  Serial.print(dist);
-  Serial.println(" cm");
+  //Serial.print("Distance: ");
+  //Serial.print(dist);
+  //Serial.println(" cm");
 
   return dist;
 }
@@ -236,7 +236,7 @@ void loop() {
       matrix.renderBitmap(blank, 8, 12);
       delay(200);
       Serial.println("Client connected");
-      client.println("Connected to arduino");  
+      //client.println("Connected to arduino");  
 
       while (client.connected()) {
         if (client.available()) {
@@ -287,18 +287,18 @@ void loop() {
 
           if (current_left == LOW && current_right == HIGH ) { 
             Left( turnR);
-            while (current_left == LOW ){
-              current_left = digitalRead(L_EYE);
-            }
+            // while (current_left == LOW ){
+            //   current_left = digitalRead(L_EYE);
+            // }
             current_left = digitalRead(L_EYE);
             current_right = digitalRead(R_EYE);
           }
             
           if (current_left == HIGH && current_right == LOW ) { 
             Right(turnL); 
-            while (current_right == LOW){
-              current_right = digitalRead(R_EYE);
-            }
+            // while (current_right == LOW){
+            //   current_right = digitalRead(R_EYE);
+            // }
             current_left = digitalRead(L_EYE);
             current_right = digitalRead(R_EYE);
           }
@@ -312,7 +312,20 @@ void loop() {
           prev_right = current_right;
           
           if (US_ticker >= 50){
-            US_Pulse();
+            
+            float distance = US_Pulse();
+            Serial.println("Outside While loop: " + String(distance));
+            client.println(distance);
+            while (distance < 30){
+              distance = US_Pulse();
+              Serial.println(distance);
+              client.println(distance);
+              Stop();
+              delay(500);
+              if (distance > 30){
+                break;
+              }
+            }
             US_ticker = 0;
           }
           
