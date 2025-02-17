@@ -4,10 +4,10 @@
 
 #include <WiFiS3.h>
 
-char ssid[] = "2E10_AP02";
-char pass[] = "TinLizzy";
+char ssid[] = "X14_custom_wifi";
+char pass[] = "X14iscool";
 
-WiFiServer server(5220);
+WiFiServer server(5180);
 
 
 //--- WiFi Connecting LED Matrix --- //
@@ -188,9 +188,10 @@ void setup() {
   delay(200);
   matrix.renderBitmap(three_wifi, 8, 12);
   delay(200);
-  while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
-    delay(1000);
-  }
+  // while (WiFi.beginAP(ssid, pass) != WL_CONNECTED) {
+  //   delay(1000);
+  // }
+  WiFi.beginAP(ssid, pass);
   matrix.renderBitmap(full_wifi, 8, 12);
 
   Serial.println("\nConnected to WiFi");
