@@ -88,6 +88,12 @@ byte blank[8][12] = {
 #define TRIG_PIN 3  // Trig pin connected to D2
 #define ECHO_PIN 2 // Echo pin connected to D4
 
+#define L_HALL 0  // Trig pin connected to D2
+#define R_HALL 1 // Echo pin connected to D4
+
+
+volatile int spin_count = 0;
+
 
 //---Driving Functions---//
             
@@ -230,6 +236,13 @@ void setup() {
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
+  attachInterrupt( digitalPinToInterrupt(L_HALL), left_hall, LOW);
+  pinMode(L_HALL, INPUT);
+
+}
+
+void left_hall(){
+  spin_count = spin_count + 1;
 }
 
 void loop() {
@@ -347,7 +360,7 @@ void loop() {
             }
 
             if (current_left == LOW && current_right == LOW ) {
-            Stop();
+            Forward(speedL, speedR);
             }
           
 
@@ -360,6 +373,7 @@ void loop() {
 
 
           US_ticker += 1;
+          Serial.println(spin_count);
           delay(10);  //wait a second
         }
 
