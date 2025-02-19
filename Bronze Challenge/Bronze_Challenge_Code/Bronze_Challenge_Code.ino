@@ -242,6 +242,7 @@ void loop() {
   WiFiClient client = server.available(); 
 
   char state = 'G';
+  char prev_state = 'G';
 
 
   if (client) {  // Check if a client has connected
@@ -335,12 +336,13 @@ void loop() {
               //Serial.println(distance);
               client.println(distance);
               Stop();
+              prev_state = state;
               state = 'S';
               delay(600);
               if (distance > stopping_dist){
                 current_left = digitalRead(L_EYE);
                 current_right = digitalRead(R_EYE);
-                state = 'G';
+                state = prev_stat;
                 break;
               }
             }
