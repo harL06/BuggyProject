@@ -92,7 +92,12 @@ byte blank[8][12] = {
 #define R_HALL 1 // Echo pin connected to D4
 
 
-volatile int spin_count = 0;
+volatile int Lcount = 0; // Counts how many times hall sensor picks up left/right wheel
+volatile int Rcount = 0;
+
+
+const float WHEEL_RAD = 3; //cm
+const float WHEEL_CIRCUM =  PI * WHEEL_RAD * 2;
 
 
 //---Driving Functions---//
@@ -194,9 +199,22 @@ float getFilteredDistance() {
     return sum / samples;  // Return the average distance
 }
 
+
+float calculateDistanceTravelled(){
+  float mean_count = (float(Lcount) + float(Rcount))/2;
+  Serial.print("mean_count: ");
+  Serial.println(mean_count);
+  float wheel_rotations = mean_count / 4; // 4 counts for every 1 wheel rotation
+  Serial.print("wheel_rotations: ");
+  Serial.println(wheel_rotations);
+  return (WHEEL_CIRCUM * wheel_rotations);
+}
+
 //initialises a place to hold the previous IR input
 int prev_left = HIGH;
 int prev_right = HIGH;
+
+
 
 void setup() {
   Serial.begin(9600);
@@ -236,13 +254,20 @@ void setup() {
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
-  attachInterrupt( digitalPinToInterrupt(L_HALL), left_hall, LOW);
-  pinMode(L_HALL, INPUT);
+  pinMode(L_HALL, INPUT_PULLUP);  // Enable internal pull-up resistor
+  pinMode(R_HALL, INPUT_PULLUP);
+
+  attachInterrupt(digitalPinToInterrupt(L_HALL), leftInterrupt, FALLING);  // Trigger on falling edge
+  attachInterrupt(digitalPinToInterrupt(R_HALL), rightInterrupt, FALLING);
 
 }
 
-void left_hall(){
-  spin_count = spin_count + 1;
+void leftInterrupt() {
+  Lcount++;  // Increment count when magnet passes
+}
+
+void rightInterrupt() {
+  Rcount++; // Increment count when magnet passes
 }
 
 void loop() {
@@ -318,7 +343,11 @@ void loop() {
           int stopping_dist = 20;
 
           if (US_ticker >= 20){
-            
+            Serial.print("Lcount");
+            Serial.println(Lcount);
+            Serial.print("Rcount");
+            Serial.println(Rcount);
+            Serial.println( calculateDistanceTravelled());
             float distance = distance = getFilteredDistance();
             //Serial.println("Outside While loop: " + String(distance));
             client.println(distance);
@@ -373,7 +402,6 @@ void loop() {
 
 
           US_ticker += 1;
-          Serial.println(spin_count);
           delay(10);  //wait a second
         }
 
