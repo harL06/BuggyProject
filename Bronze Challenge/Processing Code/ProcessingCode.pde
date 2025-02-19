@@ -11,11 +11,12 @@ Client myClient;
 Meter m;
 
 String lastDistance = "--";  // Store last received value
+String distanceTravelled = "--";
 
 void setup() {
   cp5 = new ControlP5(this);
 
-  size(800,600);
+  size(400,300);
   
   // Create a circular meter (gauge)
   m = new Meter(this, 400, 0);
@@ -39,31 +40,57 @@ void draw() {
   
   background(153, 196, 210);  // Clear screen every frame
 
-  if (myClient.active()) {
-    String reading = myClient.readStringUntil('\n');
-    
-    if (reading != null) {
-      reading = reading.replaceAll("[\\r\\n]+", "").trim();
-      
-      if (!reading.isEmpty()) {  
-        lastDistance = reading;  // Store latest valid reading
-        //println(lastDistance);
-      }
+if (myClient.active()) {
+    String input_string = clean_reading();  // Read once
+
+    // Check if the input string is not empty
+    if (input_string != "") {
+        // Print input for debugging purposes (optional)
+        // print("INPUT: " + input_string + "\n");
+
+        // If "US" is received, get the next value (distance)
+        if (input_string.equals("US")) {
+            lastDistance = clean_reading();  // Read the next line (distance)
+            //print("Last Distance: " + lastDistance + "\n");
+        }
+        
+        // If "HALL" is received, get the next value (distance travelled)
+        if (input_string.equals("HALL")) {
+            distanceTravelled = clean_reading();  // Read the next line (distance travelled)
+            //print("Distance Travelled: " + distanceTravelled + "\n");
+        }
     }
-  }
+}
+  
   fill(255);
   textSize(14);
   // Display last valid distance even if no new data
-  text("US Sensor Reading: " + lastDistance + "cm", 10, 30);
+  text("US Sensor Reading: " + lastDistance + " cm", 10, 30);
   m.updateMeter(int(lastDistance));
+  
+  text("Distance Travelled: " + distanceTravelled + " cm", 10, 50);
   
   if (float(lastDistance) < 20) {
     fill(255, 0, 0);
     textSize(14);
-    text("Buggy Stopping!", 10, 50);
+    text("Buggy Stopping!", 200, 30);
   }
 
 }
+
+public String clean_reading(){
+    if (myClient != null && myClient.available() > 0) {  // Ensure client is valid
+      String reading = myClient.readStringUntil('\n');
+  
+      if (reading != null && !reading.isEmpty()) {
+        reading = reading.replaceAll("[\\r\\n]+", "").trim();
+        //print(reading + "\n");
+         return reading;
+      }
+    }
+    return "";
+}
+
 
 public void Disconnect(int theValue){
   if (myClient.active()){

@@ -202,11 +202,11 @@ float getFilteredDistance() {
 
 float calculateDistanceTravelled(){
   float mean_count = (float(Lcount) + float(Rcount))/2;
-  Serial.print("mean_count: ");
-  Serial.println(mean_count);
+  // Serial.print("mean_count: ");
+  // Serial.println(mean_count);
   float wheel_rotations = mean_count / 4; // 4 counts for every 1 wheel rotation
-  Serial.print("wheel_rotations: ");
-  Serial.println(wheel_rotations);
+  // Serial.print("wheel_rotations: ");
+  // Serial.println(wheel_rotations);
   return (WHEEL_CIRCUM * wheel_rotations);
 }
 
@@ -281,6 +281,7 @@ void loop() {
   bool running = false;
   float US_dist;
   int US_ticker = 0;
+  int HALL_ticker = 0;
   
   WiFiClient client = server.available(); 
 
@@ -343,17 +344,22 @@ void loop() {
           int stopping_dist = 20;
 
           if (US_ticker >= 20){
-            Serial.print("Lcount");
-            Serial.println(Lcount);
-            Serial.print("Rcount");
-            Serial.println(Rcount);
-            Serial.println( calculateDistanceTravelled());
+            // Serial.print("Lcount");
+            // Serial.println(Lcount);
+            // Serial.print("Rcount");
+            // Serial.println(Rcount);
+            // Serial.println( calculateDistanceTravelled());
             float distance = distance = getFilteredDistance();
             //Serial.println("Outside While loop: " + String(distance));
+
+            // Sends US sensor data to processing
+            client.println("US");
             client.println(distance);
+
             while (distance < stopping_dist){
               distance = getFilteredDistance();
               //Serial.println(distance);
+              client.println("US");
               client.println(distance);
               Stop();
               delay(600);
@@ -367,8 +373,8 @@ void loop() {
             US_ticker = 0;
           }
 
-                current_left = digitalRead(L_EYE);
-                current_right = digitalRead(R_EYE);
+          current_left = digitalRead(L_EYE);
+          current_right = digitalRead(R_EYE);
           ////--- Readings and Outputs ---//
          
             //call forward function
@@ -403,6 +409,14 @@ void loop() {
 
           US_ticker += 1;
           delay(10);  //wait a second
+          
+          if (HALL_ticker >= 21){
+            // Sends distance travelled data to processing
+            client.println("HALL");
+            client.println(calculateDistanceTravelled());
+            HALL_ticker = 0;
+          }
+          HALL_ticker += 1;
         }
 
         if (!running){
