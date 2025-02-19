@@ -342,7 +342,7 @@ void loop() {
               if (distance > stopping_dist){
                 current_left = digitalRead(L_EYE);
                 current_right = digitalRead(R_EYE);
-                state = prev_stat;
+                state = prev_state;
                 break;
               }
             }
