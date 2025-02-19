@@ -229,10 +229,15 @@ void setup() {
 
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
+
 }
 
 void loop() {
-
+  //--- Wheel Speeds---//
+  int speedL= 115;
+  int speedR= 90;
+  int turnL = 120;
+  int turnR = 120;
 
   //--- Start/Stop boolean---//
   bool running = false;
@@ -241,8 +246,7 @@ void loop() {
   
   WiFiClient client = server.available(); 
 
-  char state = 'G';
-  char prev_state = 'G';
+ 
 
 
   if (client) {  // Check if a client has connected
@@ -278,7 +282,7 @@ void loop() {
           // GO!!
           if (c == 'g'){
             running = true;
-            state = 'G';
+            Forward(speedL, speedR);
           }
           // STOP!!
           if (c == 's'){
@@ -289,12 +293,7 @@ void loop() {
         //--- Line Following Code---//
         if (running) {
 
-          //--- Wheel Speeds---//
-
-          int speedL= 115;
-          int speedR= 90;
-          int turnL = 120;
-          int turnR = 120;
+          
 
           //take in what the IR Sensor is giving us
           int current_left = digitalRead(L_EYE);
@@ -302,29 +301,8 @@ void loop() {
           
           //Serial.println(state);
 
-          ////--- Readings and Outputs ---//
-          if (current_left != prev_left || current_right != prev_right){
-            //call forward function
-            if (current_left == HIGH && current_right == HIGH ) { 
-              state = 'G';
-              }
-
-            if (current_left == LOW && current_right == HIGH ) { 
-              state = 'L';
-            }
-              
-            if (current_left == HIGH && current_right == LOW ) { 
-              state = 'R';
-            }
-
-            if (current_left == LOW && current_right == LOW ) {
-              state = 'S';
-            }
-          }
-
           // Stopping distance (cm)
           int stopping_dist = 20;
-
 
           if (US_ticker >= 20){
             
@@ -336,40 +314,43 @@ void loop() {
               //Serial.println(distance);
               client.println(distance);
               Stop();
-              prev_state = state;
-              state = 'S';
               delay(600);
               if (distance > stopping_dist){
                 current_left = digitalRead(L_EYE);
                 current_right = digitalRead(R_EYE);
-                state = prev_state;
+                Forward(speedL, speedR);
                 break;
               }
             }
             US_ticker = 0;
           }
 
+                current_left = digitalRead(L_EYE);
+                current_right = digitalRead(R_EYE);
+          ////--- Readings and Outputs ---//
+         
+            //call forward function
+            if (current_left == HIGH && current_right == HIGH ) { 
+              Forward(speedL, speedR);
+              }
 
-
-          if (state == 'G') { 
-            Forward(speedL, speedR); 
-          }
-
-          if (state == 'L') { 
+            if (current_left == LOW && current_right == HIGH ) { 
               Left( turnR);
               current_left = digitalRead(L_EYE);
               current_right = digitalRead(R_EYE);
-          }
+            }
+              
+            if (current_left == HIGH && current_right == LOW ) { 
+            Right(turnL); 
+            current_left = digitalRead(L_EYE);
+            current_right = digitalRead(R_EYE);
+            }
 
-          if (state == 'R') { 
-              Right(turnL); 
-              current_left = digitalRead(L_EYE);
-              current_right = digitalRead(R_EYE);
-          }
+            if (current_left == LOW && current_right == LOW ) {
+            Stop();
+            }
+          
 
-          if (state == 'S') {
-              Stop();
-          }
 
           //else Serial.println("No Change");
 
@@ -377,15 +358,13 @@ void loop() {
           prev_left = current_left;
           prev_right = current_right;
 
-          
-
 
           US_ticker += 1;
           delay(10);  //wait a second
         }
 
         if (!running){
-          state = 'S';
+          
           Stop();
         }
       }
