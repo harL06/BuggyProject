@@ -179,9 +179,11 @@ float US_Pulse(){
   //Serial.print(dist);
   //Serial.println(" cm");
 
-    if (dist > 400) {  // Discard absurd readings (sensor max is ~400 cm)
-      return -1;  // Return an invalid value
-  }
+
+  // TEST TO SEE IF THIS IS BREAKING THINGS
+  //   if (dist > 400) {  // Discard absurd readings (sensor max is ~400 cm)
+  //     return -1;  // Return an invalid value
+  // }
 
   return dist;
 }
@@ -189,7 +191,7 @@ float US_Pulse(){
 
 float getFilteredDistance() {
     float sum = 0;
-    int samples = 5;  // Number of readings to average
+    int samples = 3;  // Number of readings to average
     float pulse = 0;
     for (int i = 0; i < samples; i++) {
         pulse = US_Pulse();
@@ -272,9 +274,9 @@ void rightInterrupt() {
 
 void loop() {
   //--- Wheel Speeds---//
-  int speedL= 115;
-  int speedR= 90;
-  int turnL = 120;
+  int speedL= 120;
+  int speedR= 100;
+  int turnL = 130;
   int turnR = 120;
 
   //--- Start/Stop boolean---//
@@ -343,7 +345,7 @@ void loop() {
           // Stopping distance (cm)
           int stopping_dist = 20;
 
-          if (US_ticker >= 20){
+          if (US_ticker >= 30){
             // Serial.print("Lcount");
             // Serial.println(Lcount);
             // Serial.print("Rcount");
@@ -410,7 +412,7 @@ void loop() {
           US_ticker += 1;
           delay(10);  //wait a second
           
-          if (HALL_ticker >= 21){
+          if (HALL_ticker >= 101){
             // Sends distance travelled data to processing
             client.println("HALL");
             client.println(calculateDistanceTravelled());
