@@ -276,7 +276,7 @@ void loop() {
   //--- Wheel Speeds---//
   int speedL= 120;
   int speedR= 100;
-  int turnL = 130;
+  int turnL = 140;
   int turnR = 120;
 
   //--- Start/Stop boolean---//
