@@ -80,16 +80,16 @@ byte blank[8][12] = {
 //#define US_IN 1       //US Sensor Inputs
 //#define US_Out 1      //US Sensor Outputs
 
-#define L_MOTOR_IN1 5   //left motor pin 1
-#define L_MOTOR_IN2 6   //left motor pin 2
-#define R_MOTOR_IN1 12  //right motor pin 1
-#define R_MOTOR_IN2 4  //right motor pin 2
+#define L_MOTOR_IN1 5   //left motor pin 5
+#define L_MOTOR_IN2 6   //left motor pin 6
+#define R_MOTOR_IN1 12  //right motor pin 12
+#define R_MOTOR_IN2 4  //right motor pin 4
 
-#define TRIG_PIN 3  // Trig pin connected to D2
-#define ECHO_PIN 2 // Echo pin connected to D4
+#define TRIG_PIN 3  // Trig pin connected to D3
+#define ECHO_PIN 2 // Echo pin connected to D2
 
-#define L_HALL 0  // Trig pin connected to D2
-#define R_HALL 1 // Echo pin connected to D4
+#define L_HALL 0  // Trig pin connected to D0
+#define R_HALL 1 // Echo pin connected to D1
 
 
 volatile int Lcount = 0; // Counts how many times hall sensor picks up left/right wheel
