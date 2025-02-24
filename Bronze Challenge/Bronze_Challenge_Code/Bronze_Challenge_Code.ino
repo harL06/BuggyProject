@@ -234,6 +234,8 @@ void setup() {
   // while (WiFi.beginAP(ssid, pass) != WL_CONNECTED) {
   //   delay(1000);
   // }
+  
+  // Creates WiFi access point
   WiFi.beginAP(ssid, pass);
   matrix.renderBitmap(full_wifi, 8, 12);
 
