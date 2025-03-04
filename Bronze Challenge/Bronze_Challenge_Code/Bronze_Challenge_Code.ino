@@ -101,6 +101,19 @@ const float WHEEL_CIRCUM =  PI * WHEEL_RAD * 2;
 
 static long prevTime = 0; // Global Timing variable for speed calculation
 
+// Used for PID error tracking and goal speed setting
+float goalSpeed = 35;
+float errorSpeed = 0;
+float cumErrorSpeed = 0;
+
+// PID constants
+const float tu = 1.5; // period time (seconds)
+const float ku = 7.5;
+
+const float kp = 0.6 * ku;
+const float ki = (1.5 * ku)/ tu;
+const float kd = 0.25 * ku * tu;
+
 
 //---Driving Functions---//
             
@@ -238,6 +251,25 @@ double calculateCurrentRightSpeed(float elapsedTime) {
     prevDistanceR = currentDistanceR;
 
     return speedR;
+}
+
+double computePID(double input, float elapsedTime){
+    static float prevErrorSpeed = 0;
+    errorSpeed = goalSpeed - input;
+    cumErrorSpeed += errorSpeed * elapsedTime;
+    float rateError = (errorSpeed - prevErrorSpeed)/elapsedTime;
+
+    Serial.print(goalSpeed);
+    Serial.print(",");
+    Serial.print(errorSpeed);
+    Serial.print(",");
+
+    double out = kp*errorSpeed + ki*cumErrorSpeed + kd*rateError;
+
+    prevErrorSpeed = errorSpeed;
+    //Serial.print(out); Serial.print(",");
+
+    return out;
 }
 
 
@@ -443,7 +475,7 @@ void loop() {
           US_ticker += 1;
           delay(10);  //wait a second
           
-          if (HALL_ticker >= 31){
+          if (HALL_ticker >= 15){
 
             long currentTime = millis();
             float elapsedTime = (currentTime - prevTime) / 1000.0; // Convert to seconds
@@ -452,15 +484,31 @@ void loop() {
             client.println("HALL");
             //client.println(calculateCurrentLeftSpeed(elapsedTime));
 
-            Serial.print("Left Speed: ");
-            Serial.print(calculateCurrentLeftSpeed(elapsedTime));
-            Serial.print(" - Right Speed: ");
-            Serial.println(calculateCurrentRightSpeed(elapsedTime));
+            float leftSpeed = calculateCurrentLeftSpeed(elapsedTime);
+            float rightSpeed = calculateCurrentRightSpeed(elapsedTime);
 
-            Serial.print("Left Count: ");
-            Serial.print(Lcount);
-            Serial.print(" - Right Count: ");
-            Serial.println(Rcount);
+            // Serial.print("Left Speed: ");
+            // Serial.print(leftSpeed);
+            // Serial.print(" - Right Speed: ");
+            // Serial.println(rightSpeed);
+
+            // Serial.print("Left PID: ");
+            // Serial.print(computePID(leftSpeed, elapsedTime));
+            // Serial.print(" - Right PID: ");
+            // Serial.println(computePID(rightSpeed, elapsedTime));
+
+
+            // Print speeds for Arduino Serial Plotter
+            Serial.print(leftSpeed);
+            Serial.print(",");
+            Serial.println(rightSpeed); // Newline tells Serial Plotter to plot next point
+
+            speedL = computePID(leftSpeed, elapsedTime);
+            if (speedL > 255) speedL = 255;
+            if (speedL < 0) speedL = 0;
+            speedR = computePID(rightSpeed, elapsedTime);
+            if (speedR > 255) speedR = 255;
+            if (speedR < 0) speedR = 0;
 
             HALL_ticker = 0;
 
