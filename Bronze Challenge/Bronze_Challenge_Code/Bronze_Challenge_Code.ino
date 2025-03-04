@@ -99,6 +99,8 @@ volatile int Rcount = 0;
 const float WHEEL_RAD = 3; //cm
 const float WHEEL_CIRCUM =  PI * WHEEL_RAD * 2;
 
+static long prevTime = 0; // Global Timing variable for speed calculation
+
 
 //---Driving Functions---//
             
@@ -202,15 +204,42 @@ float getFilteredDistance() {
 }
 
 
-float calculateDistanceTravelled(){
-  float mean_count = (float(Lcount) + float(Rcount))/2;
-  // Serial.print("mean_count: ");
-  // Serial.println(mean_count);
-  float wheel_rotations = mean_count / 4; // 4 counts for every 1 wheel rotation
-  // Serial.print("wheel_rotations: ");
-  // Serial.println(wheel_rotations);
+float calculateDistanceTravelledLeft(){
+  float wheel_rotations = (float)Lcount / 4; // 4 counts for every 1 wheel rotation
   return (WHEEL_CIRCUM * wheel_rotations);
 }
+
+float calculateDistanceTravelledRight(){
+  float wheel_rotations = (float)Rcount / 4; // 4 counts for every 1 wheel rotation
+  return (WHEEL_CIRCUM * wheel_rotations);
+}
+
+double calculateCurrentLeftSpeed(float elapsedTime) {
+    static double prevDistanceL = 0; // Static means value is retained between function calls
+    double currentDistanceL = calculateDistanceTravelledLeft();
+
+    float elapsedDistance = currentDistanceL - prevDistanceL;
+
+    double speedL = elapsedDistance / elapsedTime; // Avoid division by zero
+
+    prevDistanceL = currentDistanceL;
+
+    return speedL;
+}
+
+double calculateCurrentRightSpeed(float elapsedTime) { 
+    static double prevDistanceR = 0; // Static means value is retained between function calls
+    double currentDistanceR = calculateDistanceTravelledRight();
+
+    float elapsedDistance = currentDistanceR - prevDistanceR;
+
+    double speedR = elapsedDistance / elapsedTime; // Avoid division by zero
+
+    prevDistanceR = currentDistanceR;
+
+    return speedR;
+}
+
 
 //initialises a place to hold the previous IR input
 int prev_left = HIGH;
@@ -414,11 +443,28 @@ void loop() {
           US_ticker += 1;
           delay(10);  //wait a second
           
-          if (HALL_ticker >= 101){
+          if (HALL_ticker >= 31){
+
+            long currentTime = millis();
+            float elapsedTime = (currentTime - prevTime) / 1000.0; // Convert to seconds
+
             // Sends distance travelled data to processing
             client.println("HALL");
-            client.println(calculateDistanceTravelled());
+            //client.println(calculateCurrentLeftSpeed(elapsedTime));
+
+            Serial.print("Left Speed: ");
+            Serial.print(calculateCurrentLeftSpeed(elapsedTime));
+            Serial.print(" - Right Speed: ");
+            Serial.println(calculateCurrentRightSpeed(elapsedTime));
+
+            Serial.print("Left Count: ");
+            Serial.print(Lcount);
+            Serial.print(" - Right Count: ");
+            Serial.println(Rcount);
+
             HALL_ticker = 0;
+
+            prevTime = currentTime; // Update time reference
           }
           HALL_ticker += 1;
         }
