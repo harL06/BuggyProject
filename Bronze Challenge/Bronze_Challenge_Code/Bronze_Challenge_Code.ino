@@ -103,16 +103,18 @@ static long prevTime = 0; // Global Timing variable for speed calculation
 
 // Used for PID error tracking and goal speed setting
 float goalSpeed = 35;
-float errorSpeed = 0;
-float cumErrorSpeed = 0;
+float errorSpeedL = 0;
+float cumErrorSpeedL = 0;
+float errorSpeedR = 0;
+float cumErrorSpeedR = 0;
 
 // PID constants
-const float tu = 1.5; // period time (seconds)
+const float tu = 2; // period time (seconds)
 const float ku = 7.5;
 
-const float kp = 0.6 * ku;
-const float ki = (1.5 * ku)/ tu;
-const float kd = 0.25 * ku * tu;
+const float kp = 0.3 * ku;
+const float ki = (1.2 * ku)/ tu;
+const float kd = 0.045 * ku * tu;
 
 
 //---Driving Functions---//
@@ -253,20 +255,46 @@ double calculateCurrentRightSpeed(float elapsedTime) {
     return speedR;
 }
 
-double computePID(double input, float elapsedTime){
+double computePIDL(double input, float elapsedTime){
     static float prevErrorSpeed = 0;
-    errorSpeed = goalSpeed - input;
-    cumErrorSpeed += errorSpeed * elapsedTime;
-    float rateError = (errorSpeed - prevErrorSpeed)/elapsedTime;
+    errorSpeedL = goalSpeed - input;
+    cumErrorSpeedL += errorSpeedL * elapsedTime;
+    float rateError = (errorSpeedL - prevErrorSpeed)/elapsedTime;
 
     Serial.print(goalSpeed);
     Serial.print(",");
-    Serial.print(errorSpeed);
+    Serial.print(kp*errorSpeedL);
+    Serial.print(",");
+    Serial.print(ki*cumErrorSpeedL);
+    Serial.print(",");
+    Serial.print(kd*rateError);
     Serial.print(",");
 
-    double out = kp*errorSpeed + ki*cumErrorSpeed + kd*rateError;
+    double out = kp*errorSpeedL + ki*cumErrorSpeedL + kd*rateError;
 
-    prevErrorSpeed = errorSpeed;
+    Serial.print(out);
+    Serial.print(",");
+
+    prevErrorSpeed = errorSpeedL;
+    //Serial.print(out); Serial.print(",");
+
+    return out;
+}
+
+double computePIDR(double input, float elapsedTime){
+    static float prevErrorSpeed = 0;
+    errorSpeedR = goalSpeed - input;
+    cumErrorSpeedR += errorSpeedR * elapsedTime;
+    float rateError = (errorSpeedR - prevErrorSpeed)/elapsedTime;
+
+    // Serial.print(goalSpeed);
+    // Serial.print(",");
+    // Serial.print(errorSpeedR);
+    // Serial.print(",");
+
+    double out = kp*errorSpeedR + ki*cumErrorSpeedR + kd*rateError;
+
+    prevErrorSpeed = errorSpeedR;
     //Serial.print(out); Serial.print(",");
 
     return out;
@@ -503,10 +531,10 @@ void loop() {
             Serial.print(",");
             Serial.println(rightSpeed); // Newline tells Serial Plotter to plot next point
 
-            speedL = computePID(leftSpeed, elapsedTime);
+            speedL = computePIDL(leftSpeed, elapsedTime);
             if (speedL > 255) speedL = 255;
             if (speedL < 0) speedL = 0;
-            speedR = computePID(rightSpeed, elapsedTime);
+            speedR = computePIDR(rightSpeed, elapsedTime);
             if (speedR > 255) speedR = 255;
             if (speedR < 0) speedR = 0;
 
