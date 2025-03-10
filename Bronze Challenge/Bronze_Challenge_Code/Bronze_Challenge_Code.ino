@@ -1,5 +1,8 @@
 // Group X14
 
+// Digital Write of 255 = Wheel speed approx 75 cm/s for LEFT and 82 cm/s for RIGHT
+
+
 //---WiFi Setup---//
 
 #include <WiFiS3.h>
@@ -102,19 +105,24 @@ const float WHEEL_CIRCUM =  PI * WHEEL_RAD * 2;
 static long prevTime = 0; // Global Timing variable for speed calculation
 
 // Used for PID error tracking and goal speed setting
-float goalSpeed = 35;
+float goalSpeed = 45;
 float errorSpeedL = 0;
 float cumErrorSpeedL = 0;
 float errorSpeedR = 0;
 float cumErrorSpeedR = 0;
 
 // PID constants
-const float tu = 2; // period time (seconds)
-const float ku = 7.5;
+const float tu = 3; // period time (seconds)
+const float ku = 6.2;
 
 const float kp = 0.3 * ku;
-const float ki = (1.2 * ku)/ tu;
-const float kd = 0.045 * ku * tu;
+//const float kp = ku;
+const float ki = (0.165 * ku)/ tu;
+//const float ki = 0;
+//const float kd = 0.055 * ku * tu;
+
+// Harun recommends just killing D coefficient for our use case
+const float kd = 0;
 
 
 //---Driving Functions---//
@@ -366,7 +374,7 @@ void rightInterrupt() {
 void loop() {
   //--- Wheel Speeds---//
   int speedL= 120;
-  int speedR= 100;
+  int speedR= 120;
   int turnL = 140;
   int turnR = 120;
 
@@ -503,7 +511,7 @@ void loop() {
           US_ticker += 1;
           delay(10);  //wait a second
           
-          if (HALL_ticker >= 15){
+          if (HALL_ticker >= 30){
 
             long currentTime = millis();
             float elapsedTime = (currentTime - prevTime) / 1000.0; // Convert to seconds
@@ -527,9 +535,14 @@ void loop() {
 
 
             // Print speeds for Arduino Serial Plotter
+            // Serial.print(speedL);
+            // Serial.print(", ");
             Serial.print(leftSpeed);
-            Serial.print(",");
+            Serial.print(", ");
+            // Serial.print(speedR);
+            // Serial.print(", ");
             Serial.println(rightSpeed); // Newline tells Serial Plotter to plot next point
+
 
             speedL = computePIDL(leftSpeed, elapsedTime);
             if (speedL > 255) speedL = 255;
