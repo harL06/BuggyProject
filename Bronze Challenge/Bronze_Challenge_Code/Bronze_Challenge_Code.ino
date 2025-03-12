@@ -102,20 +102,27 @@ volatile int Rcount = 0;
 const float WHEEL_RAD = 3; //cm
 const float WHEEL_CIRCUM =  PI * WHEEL_RAD * 2;
 
-static long prevTime = 0; // Global Timing variable for speed calculation
+long prevTime = millis(); // Global Timing variable for speed calculation
+long stoppedTime;
+long goTime;
+long timeStoppedFor;
 
 // Used for PID error tracking and goal speed setting
-float goalSpeed = 45;
+float set_goal_speed = 15;
+
+float goalSpeedL = 15;
+float goalSpeedR = 15;
+
 float errorSpeedL = 0;
-float cumErrorSpeedL = 0;
+float cumErrorSpeedL = 160;
 float errorSpeedR = 0;
-float cumErrorSpeedR = 0;
+float cumErrorSpeedR = 160;
 
 // PID constants
 const float tu = 3; // period time (seconds)
 const float ku = 6.2;
 
-const float kp = 0.3 * ku;
+const float kp = 0.25 * ku;
 //const float kp = ku;
 const float ki = (0.165 * ku)/ tu;
 //const float ki = 0;
@@ -129,6 +136,8 @@ const float kd = 0;
             
 //         normal speed, normal speed
 void Forward(int speedL, int speedR){
+  goalSpeedL = set_goal_speed;
+  goalSpeedR = set_goal_speed;
   analogWrite(ENA, speedL);   
   analogWrite(ENB, speedR);  
  
@@ -139,7 +148,14 @@ void Forward(int speedL, int speedR){
  
 }
 
+void Go(){
+  goTime = millis();
+
+  timeStoppedFor = goTime - stoppedTime;
+}
+
 void Stop(){
+  stoppedTime = millis();
   digitalWrite(L_MOTOR_IN1, LOW);
   digitalWrite(L_MOTOR_IN2, LOW);
   digitalWrite(R_MOTOR_IN1, LOW);
@@ -160,6 +176,8 @@ void Backward(int speedL, int speedR){
 
 // right wheel is the only one moving
 void Left(int turnR){
+  goalSpeedL = 0;
+  goalSpeedR = set_goal_speed;
 
   analogWrite(ENB, turnR);
  
@@ -171,7 +189,8 @@ void Left(int turnR){
 }
 // left wheel is the only one moving
 void Right(int turnL){
-  
+  goalSpeedL = set_goal_speed;
+  goalSpeedR = 0;
   analogWrite(ENA, turnL);  
   
   digitalWrite(L_MOTOR_IN1, HIGH);
@@ -265,11 +284,11 @@ double calculateCurrentRightSpeed(float elapsedTime) {
 
 double computePIDL(double input, float elapsedTime){
     static float prevErrorSpeed = 0;
-    errorSpeedL = goalSpeed - input;
+    errorSpeedL = goalSpeedL - input;
     cumErrorSpeedL += errorSpeedL * elapsedTime;
     float rateError = (errorSpeedL - prevErrorSpeed)/elapsedTime;
 
-    Serial.print(goalSpeed);
+    Serial.print(goalSpeedL);
     Serial.print(",");
     Serial.print(kp*errorSpeedL);
     Serial.print(",");
@@ -291,7 +310,7 @@ double computePIDL(double input, float elapsedTime){
 
 double computePIDR(double input, float elapsedTime){
     static float prevErrorSpeed = 0;
-    errorSpeedR = goalSpeed - input;
+    errorSpeedR = goalSpeedR - input;
     cumErrorSpeedR += errorSpeedR * elapsedTime;
     float rateError = (errorSpeedR - prevErrorSpeed)/elapsedTime;
 
@@ -373,10 +392,10 @@ void rightInterrupt() {
 
 void loop() {
   //--- Wheel Speeds---//
-  int speedL= 120;
-  int speedR= 120;
-  int turnL = 140;
-  int turnR = 120;
+  int speedL= 100;
+  int speedR= 100;
+  // int turnL = 140;
+  // int turnR = 120;
 
   //--- Start/Stop boolean---//
   bool running = false;
@@ -414,6 +433,7 @@ void loop() {
 
           // Quit / Disconnect
           if(c == 'q'){
+            Stop();
             client.stop(); // Close the connection
             Serial.println("Client disconnected");
             running = false;
@@ -421,11 +441,13 @@ void loop() {
 
           // GO!!
           if (c == 'g'){
+            Go();
             running = true;
             Forward(speedL, speedR);
           }
           // STOP!!
           if (c == 's'){
+            Stop();
             running = false;
           }
         }
@@ -439,40 +461,47 @@ void loop() {
           int current_left = digitalRead(L_EYE);
           int current_right = digitalRead(R_EYE);
           
-          //Serial.println(state);
+        /// ******************************************
+        /// UN COMMENT WHEN US SENSOR REPLACED **********
+        /// *********************************************
 
-          // Stopping distance (cm)
-          int stopping_dist = 20;
 
-          if (US_ticker >= 30){
-            // Serial.print("Lcount");
-            // Serial.println(Lcount);
-            // Serial.print("Rcount");
-            // Serial.println(Rcount);
-            // Serial.println( calculateDistanceTravelled());
-            float distance = distance = getFilteredDistance();
-            //Serial.println("Outside While loop: " + String(distance));
+          // //Serial.println(state);
 
-            // Sends US sensor data to processing
-            client.println("US");
-            client.println(distance);
+          // // Stopping distance (cm)
+          // int stopping_dist = 20;
 
-            while (distance < stopping_dist){
-              distance = getFilteredDistance();
-              //Serial.println(distance);
-              client.println("US");
-              client.println(distance);
-              Stop();
-              delay(600);
-              if (distance > stopping_dist){
-                current_left = digitalRead(L_EYE);
-                current_right = digitalRead(R_EYE);
-                Forward(speedL, speedR);
-                break;
-              }
-            }
-            US_ticker = 0;
-          }
+          // if (US_ticker >= 30){
+          //   // Serial.print("Lcount");
+          //   // Serial.println(Lcount);
+          //   // Serial.print("Rcount");
+          //   // Serial.println(Rcount);
+          //   // Serial.println( calculateDistanceTravelled());
+
+          //   float distance = distance = getFilteredDistance();
+          //   //Serial.println("Outside While loop: " + String(distance));
+
+          //   // Sends US sensor data to processing
+          //   client.println("US");
+          //   client.println(distance);
+
+          //   while (distance < stopping_dist){
+          //     distance = getFilteredDistance();
+          //     //Serial.println(distance);
+          //     client.println("US");
+          //     client.println(distance);
+          //     Stop();
+          //     delay(600);
+          //     if (distance > stopping_dist){
+          //       current_left = digitalRead(L_EYE);
+          //       current_right = digitalRead(R_EYE);
+          //       Forward(speedL, speedR);
+          //       Go();
+          //       break;
+          //     }
+          //   }
+          //   US_ticker = 0;
+          // }
 
           current_left = digitalRead(L_EYE);
           current_right = digitalRead(R_EYE);
@@ -484,13 +513,13 @@ void loop() {
               }
 
             if (current_left == LOW && current_right == HIGH ) { 
-              Left( turnR);
+              Left(speedR);
               current_left = digitalRead(L_EYE);
               current_right = digitalRead(R_EYE);
             }
               
             if (current_left == HIGH && current_right == LOW ) { 
-            Right(turnL); 
+            Right(speedL); 
             current_left = digitalRead(L_EYE);
             current_right = digitalRead(R_EYE);
             }
@@ -514,7 +543,10 @@ void loop() {
           if (HALL_ticker >= 30){
 
             long currentTime = millis();
-            float elapsedTime = (currentTime - prevTime) / 1000.0; // Convert to seconds
+            float elapsedTime = (currentTime - prevTime - timeStoppedFor) / 1000.0; // Convert to seconds
+            if (timeStoppedFor != 0){
+              timeStoppedFor = 0;
+            }
 
             // Sends distance travelled data to processing
             client.println("HALL");
@@ -559,8 +591,7 @@ void loop() {
         }
 
         if (!running){
-          
-          Stop();
+          continue;
         }
       }
   }
