@@ -466,42 +466,49 @@ void loop() {
         /// *********************************************
 
 
-          // //Serial.println(state);
+          //Serial.println(state);
 
-          // // Stopping distance (cm)
-          // int stopping_dist = 20;
+          // Stopping distance (cm)
+          int stopping_dist = 20;
 
-          // if (US_ticker >= 30){
-          //   // Serial.print("Lcount");
-          //   // Serial.println(Lcount);
-          //   // Serial.print("Rcount");
-          //   // Serial.println(Rcount);
-          //   // Serial.println( calculateDistanceTravelled());
+          if (US_ticker >= 30){
+            // Serial.print("Lcount");
+            // Serial.println(Lcount);
+            // Serial.print("Rcount");
+            // Serial.println(Rcount);
+            // Serial.println( calculateDistanceTravelled());
 
-          //   float distance = distance = getFilteredDistance();
-          //   //Serial.println("Outside While loop: " + String(distance));
+            float distance = distance = getFilteredDistance();
+            //Serial.println("Outside While loop: " + String(distance));
 
-          //   // Sends US sensor data to processing
-          //   client.println("US");
-          //   client.println(distance);
+            // Sends US sensor data to processing
+            client.println("US");
+            client.println(distance);
 
-          //   while (distance < stopping_dist){
-          //     distance = getFilteredDistance();
-          //     //Serial.println(distance);
-          //     client.println("US");
-          //     client.println(distance);
-          //     Stop();
-          //     delay(600);
-          //     if (distance > stopping_dist){
-          //       current_left = digitalRead(L_EYE);
-          //       current_right = digitalRead(R_EYE);
-          //       Forward(speedL, speedR);
-          //       Go();
-          //       break;
-          //     }
-          //   }
-          //   US_ticker = 0;
-          // }
+            while (distance < stopping_dist){
+              distance = getFilteredDistance();
+              //Serial.println(distance);
+              client.println("US");
+              client.println(distance);
+              
+              goalSpeedL = 0;
+              goalSpeedR = 0;
+
+              Stop();
+              delay(600);
+              if (distance > stopping_dist){
+                current_left = digitalRead(L_EYE);
+                current_right = digitalRead(R_EYE);
+
+                goalSpeedL = set_goal_speed;
+                goalSpeedR = set_goal_speed;
+                Forward(speedL, speedR);
+                Go();
+                break;
+              }
+            }
+            US_ticker = 0;
+          }
 
           current_left = digitalRead(L_EYE);
           current_right = digitalRead(R_EYE);
