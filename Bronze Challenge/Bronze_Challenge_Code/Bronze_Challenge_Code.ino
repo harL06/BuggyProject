@@ -288,19 +288,19 @@ double computePIDL(double input, float elapsedTime){
     cumErrorSpeedL += errorSpeedL * elapsedTime;
     float rateError = (errorSpeedL - prevErrorSpeed)/elapsedTime;
 
-    Serial.print(goalSpeedL);
-    Serial.print(",");
-    Serial.print(kp*errorSpeedL);
-    Serial.print(",");
-    Serial.print(ki*cumErrorSpeedL);
-    Serial.print(",");
-    Serial.print(kd*rateError);
-    Serial.print(",");
+    // Serial.print(goalSpeedL);
+    // Serial.print(",");
+    // Serial.print(kp*errorSpeedL);
+    // Serial.print(",");
+    // Serial.print(ki*cumErrorSpeedL);
+    // Serial.print(",");
+    // Serial.print(kd*rateError);
+    // Serial.print(",");
 
     double out = kp*errorSpeedL + ki*cumErrorSpeedL + kd*rateError;
 
-    Serial.print(out);
-    Serial.print(",");
+    // Serial.print(out);
+    // Serial.print(",");
 
     prevErrorSpeed = errorSpeedL;
     //Serial.print(out); Serial.print(",");
@@ -576,11 +576,12 @@ void loop() {
             // Print speeds for Arduino Serial Plotter
             // Serial.print(speedL);
             // Serial.print(", ");
-            Serial.print(leftSpeed);
-            Serial.print(", ");
+            // Serial.print(leftSpeed);
+            // Serial.print(", ");
             // Serial.print(speedR);
             // Serial.print(", ");
-            Serial.println(rightSpeed); // Newline tells Serial Plotter to plot next point
+            // Serial.println(rightSpeed); // Newline tells Serial Plotter to plot next point
+
 
 
             speedL = computePIDL(leftSpeed, elapsedTime);
@@ -589,6 +590,11 @@ void loop() {
             speedR = computePIDR(rightSpeed, elapsedTime);
             if (speedR > 255) speedR = 255;
             if (speedR < 0) speedR = 0;
+
+            // Send data packet to processing
+            client.println("speed_packet");
+            String speed_data = String(round(leftSpeed)) + "," + String(round(rightSpeed)) + "," + String(speedL) + "," + String(speedR);
+            client.println(speed_data);  // Send as a single packet
 
             HALL_ticker = 0;
 
