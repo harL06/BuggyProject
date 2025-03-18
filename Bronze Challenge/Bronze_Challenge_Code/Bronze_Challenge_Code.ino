@@ -107,6 +107,8 @@ long stoppedTime;
 long goTime;
 long timeStoppedFor;
 
+bool stopped = false;
+
 // Used for PID error tracking and goal speed setting
 float set_goal_speed = 15;
 
@@ -134,6 +136,8 @@ const float kd = 0;
 
 byte x;
 
+bool objectFollowingMode = false;
+
 
 //---Driving Functions---//
             
@@ -153,12 +157,14 @@ void Forward(int speedL, int speedR){
 
 void Go(){
   goTime = millis();
+  stopped = false;
 
   timeStoppedFor = goTime - stoppedTime;
 }
 
 void Stop(){
   stoppedTime = millis();
+  stopped = true;
   digitalWrite(L_MOTOR_IN1, LOW);
   digitalWrite(L_MOTOR_IN2, LOW);
   digitalWrite(R_MOTOR_IN1, LOW);
@@ -291,19 +297,19 @@ double computePIDL(double input, float elapsedTime){
     cumErrorSpeedL += errorSpeedL * elapsedTime;
     float rateError = (errorSpeedL - prevErrorSpeed)/elapsedTime;
 
-    // Serial.print(goalSpeedL);
-    // Serial.print(",");
-    // Serial.print(kp*errorSpeedL);
-    // Serial.print(",");
-    // Serial.print(ki*cumErrorSpeedL);
-    // Serial.print(",");
-    // Serial.print(kd*rateError);
-    // Serial.print(",");
+    Serial.print(goalSpeedL);
+    Serial.print(",");
+    Serial.print(kp*errorSpeedL);
+    Serial.print(",");
+    Serial.print(ki*cumErrorSpeedL);
+    Serial.print(",");
+    Serial.print(kd*rateError);
+    Serial.print(",");
 
     double out = kp*errorSpeedL + ki*cumErrorSpeedL + kd*rateError;
 
-    // Serial.print(out);
-    // Serial.print(",");
+    Serial.print(out);
+    Serial.print(",");
 
     prevErrorSpeed = errorSpeedL;
     //Serial.print(out); Serial.print(",");
@@ -460,6 +466,19 @@ void loop() {
                 //Serial.println("Received Speed: " + String(finalSpeed));
                 set_goal_speed = finalSpeed;
                 goalSpeedL = goalSpeedR = set_goal_speed;
+
+            }
+            else if (c == 'f') {
+                objectFollowingMode = true;
+            }
+            else if (c == 'n' && receivedData.length() > 1) {
+                int finalSpeed = receivedData.substring(1).toInt();  // Extract number
+                //Serial.println("Received Speed: " + String(finalSpeed));
+                set_goal_speed = finalSpeed;
+                goalSpeedL = goalSpeedR = set_goal_speed;objectFollowingMode = false;
+                if (stopped){
+                  Go();
+                }
             }
           }
         }
@@ -481,44 +500,60 @@ void loop() {
           //Serial.println(state);
 
           // Stopping distance (cm)
-          int stopping_dist = 20;
+          int stopping_dist = 15;
+          int slow_dist = 25;
+          int fast_dist = 35;
 
-          if (US_ticker >= 30){
-            // Serial.print("Lcount");
-            // Serial.println(Lcount);
-            // Serial.print("Rcount");
-            // Serial.println(Rcount);
-            // Serial.println( calculateDistanceTravelled());
 
-            float distance = distance = getFilteredDistance();
+          if (objectFollowingMode && US_ticker >= 30){
+
+            float distance = getFilteredDistance();
             //Serial.println("Outside While loop: " + String(distance));
 
             // Sends US sensor data to processing
             client.println("US");
             client.println(distance);
 
-            while (distance < stopping_dist){
-              distance = getFilteredDistance();
-              //Serial.println(distance);
-              client.println("US");
-              client.println(distance);
-              
-              goalSpeedL = 0;
-              goalSpeedR = 0;
-
+            if (distance <=  stopping_dist){
+              goalSpeedL = goalSpeedR = set_goal_speed = 0;
               Stop();
-              delay(600);
-              if (distance > stopping_dist){
-                current_left = digitalRead(L_EYE);
-                current_right = digitalRead(R_EYE);
-
-                goalSpeedL = set_goal_speed;
-                goalSpeedR = set_goal_speed;
-                Forward(speedL, speedR);
+            }
+            else if (distance >=  slow_dist && distance < fast_dist){
+              goalSpeedL = goalSpeedR = set_goal_speed = 15;
+              if (stopped){
                 Go();
-                break;
               }
             }
+            else if(distance >= fast_dist){
+              goalSpeedL = goalSpeedR = set_goal_speed = 20;
+              if (stopped){
+                Go();
+              }
+            }
+          
+
+            // while (distance < stopping_dist){
+            //   distance = getFilteredDistance();
+            //   //Serial.println(distance);
+            //   client.println("US");
+            //   client.println(distance);
+              
+            //   goalSpeedL = 0;
+            //   goalSpeedR = 0;
+
+            //   Stop();
+            //   delay(600);
+            //   if (distance > stopping_dist){
+            //     current_left = digitalRead(L_EYE);
+            //     current_right = digitalRead(R_EYE);
+
+            //     goalSpeedL = set_goal_speed;
+            //     goalSpeedR = set_goal_speed;
+            //     Forward(speedL, speedR);
+            //     Go();
+            //     break;
+            //   }
+
             US_ticker = 0;
           }
 
@@ -605,9 +640,11 @@ void loop() {
 
             // Send data packet to processing
             client.println("speed_packet");
-            String speed_data = String(round(leftSpeed)) + "," + String(round(rightSpeed)) + "," + String(speedL) + "," + String(speedR);
+            String speed_data = String(round(leftSpeed)) + "," + String(round(rightSpeed)) + "," + String(speedL) + "," + String(speedR) + "," + String(set_goal_speed);
             client.println(speed_data);  // Send as a single packet
-
+            Serial.println(set_goal_speed);
+            Serial.print(goalSpeedL);
+            Serial.println(goalSpeedR);
             HALL_ticker = 0;
 
             prevTime = currentTime; // Update time reference

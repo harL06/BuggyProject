@@ -2,9 +2,6 @@ import processing.net.*;
 import controlP5.*;
 import meter.*;  // Import the Meter library
 
-
-
-
 // Gauge Cluster Init //
 
 Meter LSpeed_G, RSpeed_G, LPower_G, RPower_G;
@@ -15,10 +12,7 @@ int meter_scale = 250;
 int gauge_cluster_origin_x = 600;
 int gauge_cluster_origin_y = 150;
 
-int leftSpeed;
-int rightSpeed;
-int leftPower;
-int rightPower;
+int leftSpeed, rightSpeed, leftPower, rightPower, goalSpeed;
 
 // ----
 
@@ -33,6 +27,8 @@ char char1, char2, char3;
 int maxspeed = 25;
 int minspeed = 0;
 
+int current_speed;
+
 
 void setup() {
   size(1200,600);
@@ -45,7 +41,7 @@ void setup() {
   // Gauge Cluster Setup
   ////
   
-  String[] speedScaleLabels = {"0", "5", "10", "15", "20", "25"};
+  String[] speedScaleLabels = {"0", "5", "10", "15", "20", "25", "30"};
   
   // Create a LEFT SPEED Gauge
   LSpeed_G = new Meter(this, gauge_cluster_origin_x, gauge_cluster_origin_y);
@@ -53,10 +49,10 @@ void setup() {
   LSpeed_G.setScaleLabels(speedScaleLabels);
   
   LSpeed_G.setMinScaleValue(0.0);
-  LSpeed_G.setMaxScaleValue(maxspeed);
+  LSpeed_G.setMaxScaleValue(30);
   
   LSpeed_G.setMinInputSignal(0);
-  LSpeed_G.setMaxInputSignal(maxspeed);
+  LSpeed_G.setMaxInputSignal(30);
   
   LSpeed_G.setTitle("Left Wheel Speed (cm/s)");
   
@@ -66,10 +62,10 @@ void setup() {
   RSpeed_G.setScaleLabels(speedScaleLabels);
   
   RSpeed_G.setMinScaleValue(0.0);
-  RSpeed_G.setMaxScaleValue(maxspeed);
+  RSpeed_G.setMaxScaleValue(30);
   
   RSpeed_G.setMinInputSignal(0);
-  RSpeed_G.setMaxInputSignal(maxspeed);
+  RSpeed_G.setMaxInputSignal(30);
   
   RSpeed_G.setTitle("Right Wheel Speed (cm/s)");
   
@@ -107,8 +103,8 @@ void setup() {
   
   cp5.addButton("GO").setValue(0).setPosition(100,120).setSize(100,50);
   cp5.addButton("STOP").setValue(0).setPosition(300,120).setSize(100,50);
-  cp5.addButton("Start Following").setValue(0).setPosition(100,300).setSize(100,50);
-  cp5.addButton("Stop Following").setValue(0).setPosition(100,400).setSize(100,50);
+  cp5.addButton("Follow").setValue(0).setPosition(100,300).setSize(100,50);
+  cp5.addButton("GoalSpeed").setValue(0).setPosition(100,400).setSize(100,50);
   
   // Arduino's IP and Port
   myClient = new Client(this,"192.168.4.1",5180);
@@ -138,13 +134,14 @@ if (myClient.active()) {
             
             String[] values = split(input_string, ',');  // Split by comma
     
-            if (values.length == 4) {  // Ensure we got the expected number of values
+            if (values.length == 5) {  // Ensure we got the expected number of values
                 leftSpeed  = int(values[0]);
                 rightSpeed = int(values[1]);
                 leftPower  = int(values[2]);
                 rightPower = int(values[3]);
+                goalSpeed = int(values[4]);
     
-                println("Left Speed: " + leftSpeed + " Right Speed: " + rightSpeed + " Left Power: " + leftPower + " Right Power: " + rightPower);
+                println("Left Speed: " + leftSpeed + " Right Speed: " + rightSpeed + " Left Power: " + leftPower + " Right Power: " + rightPower + " Goal Speed: " + goalSpeed);
             }
         }
     }
@@ -155,8 +152,8 @@ if (myClient.active()) {
   text("X14 Buggy", 150, 60); 
 
   textSize(20);
-  text("Speed Control", 300, 250);
-  text("Following Mode", 80, 250);
+  text("Speed Control:", 300, 250);
+  text("Set Mode:", 100, 250);
   text("US Sensor Reading: " + lastDistance + " cm", 10, 550);
   //m.updateMeter(int(lastDistance));
   
@@ -193,6 +190,7 @@ public String clean_reading(){
 public void Speed(int theValue){
   //myClient.write("\n");
   String message = "k" + theValue + "\n";  // Send full number as a string
+  current_speed = theValue;
   myClient.write(message);
 }
 
@@ -211,5 +209,17 @@ public void GO(int theValue){
 public void STOP(int theValue){
   if (myClient.active()){
     myClient.write("s\n");
+  }
+}
+
+public void Follow(int theValue){
+  if (myClient.active()){
+    myClient.write("f\n");
+  }
+}
+
+public void GoalSpeed(int theValue){
+  if (myClient.active()){
+    myClient.write("n" + current_speed + "\n");
   }
 }
