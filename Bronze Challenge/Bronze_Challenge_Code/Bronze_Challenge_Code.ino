@@ -132,6 +132,9 @@ const float ki = (0.165 * ku)/ tu;
 const float kd = 0;
 
 
+byte x;
+
+
 //---Driving Functions---//
             
 //         normal speed, normal speed
@@ -425,30 +428,39 @@ void loop() {
       while (client.connected()) {
         if (client.available()) {
 
-          char c = client.read();
+          String receivedData = client.readStringUntil('\n');  // Read full line
+        receivedData.trim();  // Remove spaces/newlines
 
-          if (c != -1){
-            Serial.println(c);
-          }
+        //Serial.println("Raw Received: " + receivedData); // Debugging output
 
-          // Quit / Disconnect
-          if(c == 'q'){
-            Stop();
-            client.stop(); // Close the connection
-            Serial.println("Client disconnected");
-            running = false;
-          }
+        if (receivedData.length() > 0) {
+            char c = receivedData.charAt(0); // First character
 
-          // GO!!
-          if (c == 'g'){
-            Go();
-            running = true;
-            Forward(speedL, speedR);
-          }
-          // STOP!!
-          if (c == 's'){
-            Stop();
-            running = false;
+            // Quit / Disconnect
+            if (c == 'q') {
+                Stop();
+                client.stop(); // Close the connection
+                Serial.println("Client disconnected");
+                running = false;
+            }
+            // GO!!
+            else if (c == 'g') {
+                Go();
+                running = true;
+                Forward(speedL, speedR);
+            }
+            // STOP!!
+            else if (c == 's') {
+                Stop();
+                running = false;
+            }
+            // SET GOAL SPEED
+            else if (c == 'k' && receivedData.length() > 1) {
+                int finalSpeed = receivedData.substring(1).toInt();  // Extract number
+                //Serial.println("Received Speed: " + String(finalSpeed));
+                set_goal_speed = finalSpeed;
+                goalSpeedL = goalSpeedR = set_goal_speed;
+            }
           }
         }
 

@@ -2,18 +2,18 @@ import processing.net.*;
 import controlP5.*;
 import meter.*;  // Import the Meter library
 
+
+
+
 // Gauge Cluster Init //
 
-Meter LSpeed_G;
-Meter RSpeed_G;
-Meter LPower_G;
-Meter RPower_G;
+Meter LSpeed_G, RSpeed_G, LPower_G, RPower_G;
 
 int meter_val = 50;
 
 int meter_scale = 250;
-int gauge_cluster_origin_x = 400;
-int gauge_cluster_origin_y = 0;
+int gauge_cluster_origin_x = 600;
+int gauge_cluster_origin_y = 150;
 
 int leftSpeed;
 int rightSpeed;
@@ -28,17 +28,24 @@ Client myClient;
 String lastDistance = "--";  // Store last received value
 String distanceTravelled = "--";
 
+char char1, char2, char3;
+
+int maxspeed = 25;
+int minspeed = 0;
+
 
 void setup() {
-  cp5 = new ControlP5(this);
-
   size(1200,600);
   
+  cp5 = new ControlP5(this);
+  
+  cp5.addSlider("Speed").setPosition(340, 300).setSize(50, 150).setRange(minspeed, maxspeed).setValue(15);
+
   ////
   // Gauge Cluster Setup
   ////
   
-  String[] speedScaleLabels = {"0", "10", "20", "30", "40", "50", "60"};
+  String[] speedScaleLabels = {"0", "5", "10", "15", "20", "25"};
   
   // Create a LEFT SPEED Gauge
   LSpeed_G = new Meter(this, gauge_cluster_origin_x, gauge_cluster_origin_y);
@@ -46,10 +53,10 @@ void setup() {
   LSpeed_G.setScaleLabels(speedScaleLabels);
   
   LSpeed_G.setMinScaleValue(0.0);
-  LSpeed_G.setMaxScaleValue(60.0);
+  LSpeed_G.setMaxScaleValue(maxspeed);
   
   LSpeed_G.setMinInputSignal(0);
-  LSpeed_G.setMaxInputSignal(60);
+  LSpeed_G.setMaxInputSignal(maxspeed);
   
   LSpeed_G.setTitle("Left Wheel Speed (cm/s)");
   
@@ -59,10 +66,10 @@ void setup() {
   RSpeed_G.setScaleLabels(speedScaleLabels);
   
   RSpeed_G.setMinScaleValue(0.0);
-  RSpeed_G.setMaxScaleValue(60.0);
+  RSpeed_G.setMaxScaleValue(maxspeed);
   
   RSpeed_G.setMinInputSignal(0);
-  RSpeed_G.setMaxInputSignal(60);
+  RSpeed_G.setMaxInputSignal(maxspeed);
   
   RSpeed_G.setTitle("Right Wheel Speed (cm/s)");
   
@@ -98,10 +105,10 @@ void setup() {
   // ----
   ////
   
-  cp5.addButton("Disconnect").setValue(0).setPosition(100,70).setSize(200,19);
-  cp5.addButton("GO").setValue(0).setPosition(100,100).setSize(200,19);
-  cp5.addButton("STOP").setValue(0).setPosition(100,130).setSize(200,19);
-  cp5.addLabel("US_Sensor").setText("").setPosition(0,0);
+  cp5.addButton("GO").setValue(0).setPosition(100,120).setSize(100,50);
+  cp5.addButton("STOP").setValue(0).setPosition(300,120).setSize(100,50);
+  cp5.addButton("Start Following").setValue(0).setPosition(100,300).setSize(100,50);
+  cp5.addButton("Stop Following").setValue(0).setPosition(100,400).setSize(100,50);
   
   // Arduino's IP and Port
   myClient = new Client(this,"192.168.4.1",5180);
@@ -144,9 +151,13 @@ if (myClient.active()) {
 }
   
   fill(255);
-  textSize(14);
-  // Display last valid distance even if no new data
-  text("US Sensor Reading: " + lastDistance + " cm", 10, 30);
+  textSize(45);
+  text("X14 Buggy", 150, 60); 
+
+  textSize(20);
+  text("Speed Control", 300, 250);
+  text("Following Mode", 80, 250);
+  text("US Sensor Reading: " + lastDistance + " cm", 10, 550);
   //m.updateMeter(int(lastDistance));
   
   //text("Distance Travelled: " + distanceTravelled + " cm", 10, 50);
@@ -154,7 +165,7 @@ if (myClient.active()) {
   if (float(lastDistance) < 20) {
     fill(255, 0, 0);
     textSize(14);
-    text("Buggy Stopping!", 200, 30);
+    text("Buggy Stopping!", 300, 550);
   }
   
   // Update Gauge Cluster Values
@@ -179,20 +190,26 @@ public String clean_reading(){
 }
 
 
-public void Disconnect(int theValue){
-  if (myClient.active()){
-    myClient.write("q");
-  }
+public void Speed(int theValue){
+  //myClient.write("\n");
+  String message = "k" + theValue + "\n";  // Send full number as a string
+  myClient.write(message);
 }
+
+char mapDigitToChar(char digitChar) {
+  int digit = digitChar - '0';  // Convert char digit to int
+  return (char)('a' + digit);
+}
+
 
 public void GO(int theValue){
   if (myClient.active()){
-    myClient.write("g");
+    myClient.write("g\n");
   }
 }
 
 public void STOP(int theValue){
   if (myClient.active()){
-    myClient.write("s");
+    myClient.write("s\n");
   }
 }
