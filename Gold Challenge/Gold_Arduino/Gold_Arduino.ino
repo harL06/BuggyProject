@@ -169,35 +169,6 @@ void Stop(){
   digitalWrite(R_MOTOR_IN2, LOW);
 }
 
-//---UltraSonic Sensor--//
-float US_Pulse(){
-  long duration;
-  float dist;
-  // Send a short pulse to trigger pin
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-  // Read the pulse duration on the echo pin
-  duration = pulseIn(ECHO_PIN, HIGH); 
-  // Convert duration to distance in cm
-  dist = (duration * 0.0343) / 2; // Speed of sound = 0.034 cm/µs (divide by 2 for round-trip)
-  return dist;
-}
-// This takes a bunch of US pulses and takes the average
-float getFilteredDistance() {
-    float sum = 0;
-    int samples = 3;  // Number of readings to average
-    float pulse = 0;
-    for (int i = 0; i < samples; i++) {
-        pulse = US_Pulse();
-        if (pulse != -1) sum += US_Pulse();
-        delay(10);  // Small delay between readings
-    }
-    return sum / samples;  // Return the average distance
-}
-
 //---Speed Tracking Functions--//
 float calculateDistanceTravelledLeft(){
   float wheel_rotations = (float)Lcount / 4; // 4 counts for every 1 wheel rotation
@@ -254,7 +225,17 @@ void rightInterrupt() {Rcount++;}
 
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+
+  // HuskyLens Connection - Attempt to connect
+  Wire.begin();
+  while( !huskylens.begin(Wire) ){
+    Serial.println( F("Huskylens begin failed!") );
+    Serial.println( F("Check Huskylens protocol is set to I2C (General > Settings > Protocol Type > I2C") );
+    Serial.println( F("And confirm the physical connection."));
+    delay(1000); // Wait a second before trying to initialise again.
+  }
+
   matrix.begin();
 
   // Wifi Connection - Attempt to connect
@@ -299,9 +280,8 @@ void loop() {
 
   //--- Start/Stop boolean and Sensor Trigger Timers---//
   bool running = false;
-  float US_dist;
-  int US_ticker = 0;
   int HALL_ticker = 0;
+  int HUSKY_ticker = 0;
   
   WiFiClient client = server.available(); 
   if (client) {  // Check if a client has connected
@@ -342,18 +322,6 @@ void loop() {
               set_goal_speed = finalSpeed;
               goalSpeedL = goalSpeedR = set_goal_speed;
           }
-          // 
-          else if (c == 'f') {
-              objectFollowingMode = true;
-          }
-          else if (c == 'n' && receivedData.length() > 1) {
-              int finalSpeed = receivedData.substring(1).toInt();  // Extract number
-              set_goal_speed = finalSpeed;
-              goalSpeedL = goalSpeedR = set_goal_speed;objectFollowingMode = false;
-              if (stopped){
-                Go();
-              }
-          }
         }
       }
 
@@ -362,39 +330,6 @@ void loop() {
         //take in what the IR Sensor is giving us
         int current_left = digitalRead(L_EYE);
         int current_right = digitalRead(R_EYE);
-        
-        // Stopping distance (cm)
-        int stopping_dist = 15;
-        int slow_dist = 25;
-        int fast_dist = 35;
-
-        if (objectFollowingMode && US_ticker >= 30){
-          float distance = getFilteredDistance();
-          // Sends US sensor data to processing
-          client.println("US");
-          client.println(distance);
-
-          if (distance <=  stopping_dist){
-            goalSpeedL = goalSpeedR = set_goal_speed = 0;
-            Stop();
-          }
-          else if (distance >=  slow_dist && distance < fast_dist){
-            goalSpeedL = goalSpeedR = set_goal_speed = 15;
-            if (stopped){
-              Go();
-            }
-          }
-          else if(distance >= fast_dist){
-            goalSpeedL = goalSpeedR = set_goal_speed = 20;
-            if (stopped){
-              Go();
-            }
-          }
-          US_ticker = 0;
-        }
-
-        current_left = digitalRead(L_EYE);
-        current_right = digitalRead(R_EYE);
         ////--- Readings and Outputs ---//
           //call forward function
           if (current_left == HIGH && current_right == HIGH ) { 
@@ -416,9 +351,30 @@ void loop() {
         // Update the last sensor states for next check
         prev_left = current_left;
         prev_right = current_right;
-
-        US_ticker += 1;
         delay(10);  //wait a second
+
+        if (HUSKY_ticker >= 50){
+          if (!huskylens.request()) Serial.println(F("Fail to request data from HUSKYLENS, recheck the connection!"));
+          else {
+            int closestID = 0;
+            float maxIdSize = 0;
+
+            // Loops through all the tags the camera can see and gives the one that's the largest size
+            while (huskylens.available()) {
+              HUSKYLENSResult result = huskylens.read();
+              if ((result.width * result.height) > maxIdSize){
+                maxIdSize = result.width * result.height;
+                closestID = result.ID;
+              }
+            }
+            // Print the largest tag's ID
+            if (closestID != 0){
+              Serial.print("Closest ID: ");
+              Serial.println(closestID);
+            }
+          }
+          HUSKY_ticker = 0;
+        }
         
         if (HALL_ticker >= 30){
           long currentTime = millis();
@@ -443,14 +399,12 @@ void loop() {
           client.println("speed_packet");
           String speed_data = String(round(leftSpeed)) + "," + String(round(rightSpeed)) + "," + String(speedL) + "," + String(speedR) + "," + String(set_goal_speed);
           client.println(speed_data);  // Send as a single packet
-          Serial.println(set_goal_speed);
-          Serial.print(goalSpeedL);
-          Serial.println(goalSpeedR);
           HALL_ticker = 0;
 
           prevTime = currentTime; // Update time reference
         }
         HALL_ticker += 1;
+        HUSKY_ticker += 1;
       }
       if (!running) {continue;} // Do Nothing if running bool is false
     }
