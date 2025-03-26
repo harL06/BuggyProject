@@ -122,6 +122,11 @@ const float kp = 0.25 * ku;
 const float ki = (0.165 * ku)/ tu;
 const float kd = 0; // Harun recommends just killing D coefficient for our use case
 
+
+// Sign-Reading Variables
+bool leftAtNextJunc = false;
+bool rightAtNextJunc = false;
+
 //---Driving Functions---//
 void Forward(int speedL, int speedR){
   goalSpeedL = set_goal_speed;
@@ -327,6 +332,58 @@ void loop() {
 
       //--- Line Following Code---//
       if (running) {
+          
+        if (HUSKY_ticker >= 35){
+          if (!huskylens.request()) Serial.println(F("Fail to request data from HUSKYLENS, recheck the connection!"));
+          else {
+            int closestID = 0;
+            float maxIdSize = 0;
+            int topSpeed = 25;
+            int lowSpeed = 15;
+            float IdSize;
+
+            // Loops through all the tags the camera can see and gives the one that's the largest size
+            while (huskylens.available()) {
+              HUSKYLENSResult result = huskylens.read();
+              if ((result.width * result.height) > maxIdSize){
+                maxIdSize = result.width * result.height;
+                closestID = result.ID;
+                IdSize = (result.width * result.height);
+              }
+            }
+            // Print the largest tag's ID
+            if (closestID != 0){
+              Serial.print("Closest ID: ");
+              Serial.println(closestID);
+              Serial.print(", ID Size: ");
+              Serial.println(IdSize);
+
+              // React Based on Tag It Sees
+              if (closestID == 1){
+                // turn left junction
+                Left(speedR);
+                leftAtNextJunc = true;
+              }
+              else if (closestID == 2){
+                // turn right junction
+                Right(speedL);
+                rightAtNextJunc = true;; 
+              }
+              else if (closestID == 3){ // Speed Limit
+                set_goal_speed = lowSpeed;
+                goalSpeedL = set_goal_speed;
+                goalSpeedR = set_goal_speed;
+              }
+              else if (closestID == 4){ // Fast as possible
+                set_goal_speed = topSpeed;
+                goalSpeedL = set_goal_speed;
+                goalSpeedR = set_goal_speed;
+              }
+            }
+          }
+          HUSKY_ticker = 0;
+        }
+
         //take in what the IR Sensor is giving us
         int current_left = digitalRead(L_EYE);
         int current_right = digitalRead(R_EYE);
@@ -335,46 +392,26 @@ void loop() {
           if (current_left == HIGH && current_right == HIGH ) { 
             Forward(speedL, speedR);
             }
-          if (current_left == LOW && current_right == HIGH ) { 
+          if (current_left == LOW && current_right == HIGH && !rightAtNextJunc) { 
             Left(speedR);
             current_left = digitalRead(L_EYE);
             current_right = digitalRead(R_EYE);
+            leftAtNextJunc = false;
           }
-          if (current_left == HIGH && current_right == LOW ) { 
-          Right(speedL); 
-          current_left = digitalRead(L_EYE);
-          current_right = digitalRead(R_EYE);
+          if (current_left == HIGH && current_right == LOW && !leftAtNextJunc) { 
+            Right(speedL); 
+            current_left = digitalRead(L_EYE);
+            current_right = digitalRead(R_EYE);
+            rightAtNextJunc = false;
           }
           if (current_left == LOW && current_right == LOW ) {
-          Forward(speedL, speedR);
+            Forward(speedL, speedR);
           }
         // Update the last sensor states for next check
         prev_left = current_left;
         prev_right = current_right;
         delay(10);  //wait a second
 
-        if (HUSKY_ticker >= 50){
-          if (!huskylens.request()) Serial.println(F("Fail to request data from HUSKYLENS, recheck the connection!"));
-          else {
-            int closestID = 0;
-            float maxIdSize = 0;
-
-            // Loops through all the tags the camera can see and gives the one that's the largest size
-            while (huskylens.available()) {
-              HUSKYLENSResult result = huskylens.read();
-              if ((result.width * result.height) > maxIdSize){
-                maxIdSize = result.width * result.height;
-                closestID = result.ID;
-              }
-            }
-            // Print the largest tag's ID
-            if (closestID != 0){
-              Serial.print("Closest ID: ");
-              Serial.println(closestID);
-            }
-          }
-          HUSKY_ticker = 0;
-        }
         
         if (HALL_ticker >= 30){
           long currentTime = millis();
