@@ -105,10 +105,11 @@ void setup() {
   ////
   
 
-  cp5.addButton("GO").setValue(0).setPosition(650,450).setSize(100,100)
-  .setColorLabel(color(0, 200, 0));
-  cp5.addButton("STOP").setValue(0).setPosition(800,450).setSize(100,100)
-  .setColorLabel(color(200, 0, 0));
+  cp5.addButton("GO").setValue(0).setPosition(50,150).setSize(150,100)
+  .setColorLabel(color(0, 0, 0)).setColorBackground(color(50, 250, 50));
+  
+  cp5.addButton("STOP").setValue(0).setPosition(300,150).setSize(150,100)
+  .setColorLabel(color(0, 0, 0)).setColorBackground(color(250, 50, 50));
   //cp5.addSlider("Speed").setPosition(1000, 400).setSize(50, 150).setRange(80, 150).setValue(125)
   //.setColorLabel(color(0, 0, 0));
  
@@ -121,30 +122,69 @@ void draw() {
   background(173, 216, 230);  // Clear screen every frame
   
 fill(255, 255, 255);
-rect(-1, -1, 550, 130);
+rect(-1, -1, 550, 130); //behind title text
+
+fill(0, 0, 0);
+rect(45, 145, 150, 100); //behind button go
+
+fill(0, 0, 0);
+rect(295, 145, 150, 100); //behind button stop
+
+
+fill(255, 255, 255);
+rect(50, 275, 400, 300);
+
+
+fill(0, 0, 0);
+rect(600, 415, 150, 150);
+
 
   image(mario, 0, 0, mario.width/6, mario.height/6);
   image(luigi, 350, 0, mario.width/4, mario.height/6); //both mario so they're the same height
-  image(leftimage, 200, 300, leftimage.width, leftimage.height);
+  
+  
+  image(leftimage, 605, 420, leftimage.width/1.5, leftimage.height/1.5);
+  textSize(35);
+    fill(0, 0, 0);
+    text("Turn Left Ahead", 800, 500); 
   //image(rightimage, 200, 300, leftimage.width, leftimage.height);
   /*
   if (present ==1) {
-    image(leftimage, 200, 300, leftimage.width, leftimage.height);
-    textSize(45);
+    image(leftimage, 605, 420, leftimage.width/1.5, leftimage.height/1.5);
+    textSize(35);
     fill(0, 0, 0);
-    text("Turn Left Ahead", 150, 75); 
+    text("Turn Left Ahead", 800, 500); 
   }
+  else if (present ==2){
+    image(rightimage, 605, 420, leftimage.width/1.5, leftimage.height/1.5);
+    textSize(35);
+    fill(0, 0, 0);
+    text("Turn Left Ahead", 800, 500); 
+  }
+  else if (present ==3){
+  }
+  else if (present ==4){
+  }
+  
   */
   
   
     //fill(0, 0, 0);
   textSize(45);
   fill(0, 0, 0);
-  text("X14 Buggy", 150, 75); 
+  text("X14 Buggy", 150, 50); 
+  
+    textSize(35);
+  fill(187, 165, 61);
+  text("Gold Edition", 150, 100); 
+  
   textSize(35);
   fill(0, 0, 0);
   text("Speed & Power Gauges", 700, 50);
   
+  textSize(15);
+  fill(0, 0, 0);
+  text("camera representation here", 100, 500);
   /*
   if (myClient.active()) {
     String input_string = clean_reading();  // Read once
@@ -153,12 +193,6 @@ rect(-1, -1, 550, 130);
     if (input_string != "") {
         // Print input for debugging purposes (optional)
         // print("INPUT: " + input_string + "\n");
-
-        // If "US" is received, get the next value (distance)
-        if (input_string.equals("US")) {
-            lastDistance = clean_reading();  // Read the next line (distance)
-            //print("Last Distance: " + lastDistance + "\n");
-        }
         
         // If "L_speed" is received, get the next value (left wheel speed)
         if (input_string.equals("speed_packet")) {
@@ -187,12 +221,6 @@ rect(-1, -1, 550, 130);
 
 }
 
-public void Speed(int theValue){
-  //myClient.write("\n");
-  String message = "k" + theValue + "\n";  // Send full number as a string
-  current_speed = theValue;
-  //myClient.write(message);
-}
 
 char mapDigitToChar(char digitChar) {
   int digit = digitChar - '0';  // Convert char digit to int
