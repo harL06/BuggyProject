@@ -10,7 +10,7 @@ int meter_val = 50;
 
 int meter_scale = 250;
 int gauge_cluster_origin_x = 600;
-int gauge_cluster_origin_y = 150;
+int gauge_cluster_origin_y = 75;
 
 int leftSpeed, rightSpeed, leftPower, rightPower, goalSpeed;
 
@@ -40,8 +40,6 @@ void setup() {
   
   cp5 = new ControlP5(this);
   
- cp5.addSlider("Speed").setPosition(40, 300).setSize(50, 150).setRange(80, 150).setValue(125);
- 
  ////
   // Gauge Cluster Setup
   ////
@@ -107,9 +105,13 @@ void setup() {
   ////
   
 
-  cp5.addButton("GO").setValue(0).setPosition(100,220).setSize(100,50);
-  cp5.addButton("STOP").setValue(0).setPosition(300,220).setSize(100,50);
-  
+  cp5.addButton("GO").setValue(0).setPosition(650,450).setSize(100,100)
+  .setColorLabel(color(0, 200, 0));
+  cp5.addButton("STOP").setValue(0).setPosition(800,450).setSize(100,100)
+  .setColorLabel(color(200, 0, 0));
+  //cp5.addSlider("Speed").setPosition(1000, 400).setSize(50, 150).setRange(80, 150).setValue(125)
+  //.setColorLabel(color(0, 0, 0));
+ 
   // Arduino's IP and Port
   //myClient = new Client(this,"192.168.4.1",5180);
   //myClient.write("I am a new client");
@@ -135,10 +137,13 @@ rect(-1, -1, 550, 130);
   */
   
   
-    fill(0, 0, 0);
+    //fill(0, 0, 0);
   textSize(45);
   fill(0, 0, 0);
   text("X14 Buggy", 150, 75); 
+  textSize(35);
+  fill(0, 0, 0);
+  text("Speed & Power Gauges", 700, 50);
   
   /*
   if (myClient.active()) {
