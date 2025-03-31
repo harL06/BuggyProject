@@ -333,7 +333,7 @@ void loop() {
       //--- Line Following Code---//
       if (running) {
           
-        if (HUSKY_ticker >= 35){
+        if (HUSKY_ticker >= 15){
           if (!huskylens.request()) Serial.println(F("Fail to request data from HUSKYLENS, recheck the connection!"));
           else {
             int closestID = 0;
@@ -342,15 +342,33 @@ void loop() {
             int lowSpeed = 15;
             float IdSize;
 
+            client.println("tag_packet");
+            String tag_data = "";
+            bool firstTag = true;
+
             // Loops through all the tags the camera can see and gives the one that's the largest size
             while (huskylens.available()) {
               HUSKYLENSResult result = huskylens.read();
+
+              if (!firstTag) {
+                tag_data += "|";  // Separate multiple tags with "|"
+              }
+              firstTag = false;
+
+              tag_data += String(result.ID) + "," + String(result.xCenter) + "," +  // Create a data single packet
+                          String(result.yCenter) + "," + String(result.width) + "," + 
+                          String(result.height);
+
+
               if ((result.width * result.height) > maxIdSize){
                 maxIdSize = result.width * result.height;
                 closestID = result.ID;
                 IdSize = (result.width * result.height);
               }
             }
+
+            client.println(tag_data);  // Send as a single packet
+
             // Print the largest tag's ID
             if (closestID != 0){
               Serial.print("Closest ID: ");
