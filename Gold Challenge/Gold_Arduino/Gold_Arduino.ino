@@ -124,7 +124,7 @@ const float kd = 0; // Harun recommends just killing D coefficient for our use c
 
 
 // Sign-Reading Variables
-bool leftAtNextJunc = false;
+bool leftAtNextJunc = true;
 bool rightAtNextJunc = false;
 
 //---Driving Functions---//
@@ -361,13 +361,13 @@ void loop() {
               // React Based on Tag It Sees
               if (closestID == 1){
                 // turn left junction
-                Left(speedR);
                 leftAtNextJunc = true;
+                rightAtNextJunc = false;
               }
               else if (closestID == 2){
                 // turn right junction
-                Right(speedL);
-                rightAtNextJunc = true;; 
+                rightAtNextJunc = true;
+                leftAtNextJunc = false;
               }
               else if (closestID == 3){ // Speed Limit
                 set_goal_speed = lowSpeed;
@@ -392,25 +392,31 @@ void loop() {
           if (current_left == HIGH && current_right == HIGH ) { 
             Forward(speedL, speedR);
             }
-          if (current_left == LOW && current_right == HIGH && !rightAtNextJunc) { 
+          else if (current_left == LOW && current_right == HIGH) { 
             Left(speedR);
             current_left = digitalRead(L_EYE);
             current_right = digitalRead(R_EYE);
-            leftAtNextJunc = false;
+            //leftAtNextJunc = false;
           }
-          if (current_left == HIGH && current_right == LOW && !leftAtNextJunc) { 
+          else if (current_left == HIGH && current_right == LOW) { 
             Right(speedL); 
             current_left = digitalRead(L_EYE);
             current_right = digitalRead(R_EYE);
-            rightAtNextJunc = false;
+            //rightAtNextJunc = false;
           }
-          if (current_left == LOW && current_right == LOW ) {
-            Forward(speedL, speedR);
+          else if (current_left == LOW && current_right == LOW ) { // Sees white on both
+            if (rightAtNextJunc){
+              Right(speedL);
+            }
+            else if (leftAtNextJunc){
+              Left(speedR);
+            }
+
           }
         // Update the last sensor states for next check
         prev_left = current_left;
         prev_right = current_right;
-        delay(10);  //wait a second
+        delay(20);  // delay increased from 10 to 20 to try and introduce artificial delay that the US sensor checks previosuly added
 
         
         if (HALL_ticker >= 30){
