@@ -2,37 +2,65 @@ import processing.net.*;
 import controlP5.*;
 import meter.*;  // Import the Meter library
 
+ControlP5 cp5;
+Client myClient;
+
 // Gauge Cluster Init //
 
 Meter LSpeed_G, RSpeed_G, LPower_G, RPower_G;
 
 int meter_val = 50;
-
 int meter_scale = 250;
 int gauge_cluster_origin_x = 600;
 int gauge_cluster_origin_y = 75;
 
 int leftSpeed, rightSpeed, leftPower, rightPower, goalSpeed;
 
-ControlP5 cp5;
-Client myClient;
-
 String lastDistance = "--";  // Store last received value
 String distanceTravelled = "--";
 
-char char1, char2, char3;
 int maxspeed = 25;
 int minspeed = 0;
 
 int current_speed;
 
+// Images //
 PImage mario;
 PImage luigi;
 PImage leftimage;
 PImage rightimage;
+PImage demoImage;  // This is a demo image; load your image as needed
+
+// Coordinates for the mini screen (adjust as required)
+int miniX = 50;
+int miniY = 275;
+int miniW = 320;
+int miniH = 240;
+
+boolean vis = false;
+
+// Example coordinates within the mini screen where an image will be drawn
+int imgX = 50;
+int imgY = 50;
+int imgW = 80;
+int imgH = 50;
+
+
+// SET UP//
+
 
 void setup() {
   size(1200,600);
+  
+  // Arduino's IP and Port
+  myClient = new Client(this,"192.168.4.1",5180);
+  myClient.write("I am a new client");
+  cp5 = new ControlP5(this);
+  
+  demoImage = loadImage("fifteen_speed.png");  // Load the image
+  // Optionally, load an image (ensure the file exists in your sketch's data folder)
+  // demoImage = loadImage("yourImage.png");
+  
   mario = loadImage("mario.jpg");
   luigi = loadImage("luigi.jpeg");
   leftimage = loadImage("left_img.png");
@@ -113,13 +141,11 @@ void setup() {
   //cp5.addSlider("Speed").setPosition(1000, 400).setSize(50, 150).setRange(80, 150).setValue(125)
   //.setColorLabel(color(0, 0, 0));
  
-  // Arduino's IP and Port
-  //myClient = new Client(this,"192.168.4.1",5180);
-  //myClient.write("I am a new client");
+
 }
 void draw() {
   
-  background(173, 216, 230);  // Clear screen every frame
+background(173, 216, 230);  // Clear screen every frame
   
 fill(255, 255, 255);
 rect(-1, -1, 550, 130); //behind title text
@@ -131,8 +157,7 @@ fill(0, 0, 0);
 rect(295, 145, 150, 100); //behind button stop
 
 
-fill(255, 255, 255);
-rect(50, 275, 400, 300);
+
 
 
 fill(0, 0, 0);
@@ -185,40 +210,81 @@ rect(600, 415, 150, 150);
   textSize(15);
   fill(0, 0, 0);
   text("camera representation here", 100, 500);
-  /*
+  
   if (myClient.active()) {
-    String input_string = clean_reading();  // Read once
-
-    // Check if the input string is not empty
-    if (input_string != "") {
-        // Print input for debugging purposes (optional)
-        // print("INPUT: " + input_string + "\n");
+    String input_string = clean_reading();  // Read once per frame
+    
+    if (input_string != null && input_string.equals("tag_packet")) {
+        String full_data = clean_reading();  // Read the next packet (ensure it's complete)
+        print(full_data);
         
-        // If "L_speed" is received, get the next value (left wheel speed)
-        if (input_string.equals("speed_packet")) {
-            input_string = clean_reading();
+        if (full_data != null && full_data.length() > 0) {  // Extra safety check
+            String[] tags = split(full_data, '|');  // Split into multiple tags
             
-            String[] values = split(input_string, ',');  // Split by comma
+            vis = false;  // Reset visibility flag
     
-            if (values.length == 5) {  // Ensure we got the expected number of values
-                leftSpeed  = int(values[0]);
-                rightSpeed = int(values[1]);
-                leftPower  = int(values[2]);
-                rightPower = int(values[3]);
-                goalSpeed = int(values[4]);
+            for (String tag : tags) {
+                String[] values = split(tag, ',');  // Split individual tag data
+                
+                if (values.length == 5) {  
+                    int tagID = int(values[0]);
+                    int x = int(values[1]);
+                    int y = int(values[2]);
+                    int w = int(values[3]);
+                    int h = int(values[4]);
     
-                println("Left Speed: " + leftSpeed + " Right Speed: " + rightSpeed + " Left Power: " + leftPower + " Right Power: " + rightPower + " Goal Speed: " + goalSpeed);
+                    imgX = constrain(x - (w / 2), 0, miniW - w);
+                    imgY = constrain(y - (h / 2), 0, miniH - h);
+                    imgW = w;
+                    imgH = h;
+                    
+                    if (tagID == 1) vis = true;  // Only update visibility here
+                }
             }
         }
     }
-}
-*/
+  }
+  
   // Update Gauge Cluster Values
   LSpeed_G.updateMeter(leftSpeed);
   RSpeed_G.updateMeter(rightSpeed);
   LPower_G.updateMeter(leftPower);
   RPower_G.updateMeter(rightPower);
+  
+   // Draw the mini screen border
+  stroke(255);     // White border
+  noFill();
+  rect(miniX, miniY, miniW, miniH);
 
+ // Example: display an image at coordinates (imgX, imgY) within the mini screen
+  if (demoImage != null && vis) {
+    displayImageAt(imgX, imgY, demoImage, imgW, imgH);
+  }
+
+  
+  // Label the mini screen
+  fill(255);
+  textSize(16);
+  text("HUSKY Lens View", miniX + 5, miniY + 15);
+}
+
+
+// This function draws an image relative to the mini screen's coordinate system.
+void displayImageAt(int x, int y, PImage img, int h, int w) {
+  image(img, miniX + x, miniY + y, h, w);
+}
+
+public String clean_reading(){
+    if (myClient != null && myClient.available() > 0) {  // Ensure client is valid
+      String reading = myClient.readStringUntil('\n');
+  
+      if (reading != null && !reading.isEmpty()) {
+        reading = reading.replaceAll("[\\r\\n]+", "").trim();
+        //print(reading + "\n");
+         return reading;
+      }
+    }
+    return "";
 }
 
 
@@ -227,9 +293,10 @@ char mapDigitToChar(char digitChar) {
   return (char)('a' + digit);
 }
 
-/*
+
 public void GO(int theValue){
   if (myClient.active()){
+    print("go");
     myClient.write("g\n");
   }
 }
@@ -239,4 +306,3 @@ public void STOP(int theValue){
     myClient.write("s\n");
   }
 }
-*/
