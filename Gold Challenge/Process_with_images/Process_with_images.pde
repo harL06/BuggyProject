@@ -2,6 +2,9 @@ import processing.net.*;
 import controlP5.*;
 import meter.*;  // Import the Meter library
 
+import java.util.Arrays;  // Import the required Java class
+import java.util.Comparator;  // Import Comparator for sorting
+
 ControlP5 cp5;
 Client myClient;
 
@@ -29,7 +32,11 @@ PImage mario;
 PImage luigi;
 PImage leftimage;
 PImage rightimage;
-PImage demoImage;  // This is a demo image; load your image as needed
+PImage slow_speed_img;  // This is a demo image; load your image as needed
+PImage fast_speed_img;
+PImage right_img;
+PImage left_img;
+
 
 // Coordinates for the mini screen (adjust as required)
 int miniX = 50;
@@ -39,11 +46,17 @@ int miniH = 240;
 
 boolean vis = false;
 
-// Example coordinates within the mini screen where an image will be drawn
-int imgX = 50;
-int imgY = 50;
-int imgW = 80;
-int imgH = 50;
+PImage[] tagImages;
+
+int imgX[] = {-1, -1, -1, -1};
+int imgY[] = {-1, -1, -1, -1};
+int imgW[] = {-1, -1, -1, -1};
+int imgH[] = {-1, -1, -1, -1};
+
+boolean newData = false;  // Global flag
+
+  int framesSinceLastData = 0;
+  int maxFramesToPersist = 1;  // Adjust this to suit your needs
 
 
 // SET UP//
@@ -57,9 +70,13 @@ void setup() {
   myClient.write("I am a new client");
   cp5 = new ControlP5(this);
   
-  demoImage = loadImage("fifteen_speed.png");  // Load the image
-  // Optionally, load an image (ensure the file exists in your sketch's data folder)
-  // demoImage = loadImage("yourImage.png");
+  slow_speed_img = loadImage("fifteen_speed.png");  // Load the image
+  fast_speed_img = loadImage("fifty_speed.png");  // Load the image
+  right_img = loadImage("right_img.png");  // Load the image
+  left_img = loadImage("left_img.png");  // Load the image
+  
+  tagImages = new PImage[]{left_img, right_img, slow_speed_img, fast_speed_img};
+
   
   mario = loadImage("mario.jpg");
   luigi = loadImage("luigi.jpeg");
@@ -210,38 +227,68 @@ rect(600, 415, 150, 150);
   textSize(15);
   fill(0, 0, 0);
   text("camera representation here", 100, 500);
+
+
+
+  boolean newData = false;
   
   if (myClient.active()) {
-    String input_string = clean_reading();  // Read once per frame
+    String input_string = clean_reading();
     
     if (input_string != null && input_string.equals("tag_packet")) {
-        String full_data = clean_reading();  // Read the next packet (ensure it's complete)
-        print(full_data);
+      String full_data = clean_reading();
+      if (full_data != null && full_data.length() > 0) {
+        // Process and update your global arrays as before
+        String[] tags = split(full_data, '|');
         
-        if (full_data != null && full_data.length() > 0) {  // Extra safety check
-            String[] tags = split(full_data, '|');  // Split into multiple tags
-            
-            vis = false;  // Reset visibility flag
-    
-            for (String tag : tags) {
-                String[] values = split(tag, ',');  // Split individual tag data
-                
-                if (values.length == 5) {  
-                    int tagID = int(values[0]);
-                    int x = int(values[1]);
-                    int y = int(values[2]);
-                    int w = int(values[3]);
-                    int h = int(values[4]);
-    
-                    imgX = constrain(x - (w / 2), 0, miniW - w);
-                    imgY = constrain(y - (h / 2), 0, miniH - h);
-                    imgW = w;
-                    imgH = h;
-                    
-                    if (tagID == 1) vis = true;  // Only update visibility here
-                }
-            }
+        for (int i = 0; i < 4; i++) {
+          imgX[i] = -1;
+          imgY[i] = -1;
+          imgW[i] = -1;
+          imgH[i] = -1;
         }
+        
+        for (String tag : tags) {
+          String[] values = split(tag, ',');
+          if (values.length == 5) {
+            int tagID = int(values[0]);
+            int x = int(values[1]);
+            int y = int(values[2]);
+            int w = int(values[3]);
+            int h = int(values[4]);
+            
+            imgX[tagID - 1] = constrain(x - (w / 2), 0, miniW - w);
+            imgY[tagID - 1] = constrain(y - (h / 2), 0, miniH - h);
+            imgW[tagID - 1] = w;
+            imgH[tagID - 1] = h;
+            newData = true;
+          }
+        }
+      }
+    }
+  }
+  
+    if (newData) {
+        framesSinceLastData = 0;
+    } else if (framesSinceLastData < maxFramesToPersist) {
+        framesSinceLastData++;  // Only increment if we haven't reached the limit
+    }
+  
+  // Only draw if we have new data or haven't exceeded the persistence threshold
+  if (framesSinceLastData <= maxFramesToPersist) {
+    int n = 4;
+    Integer[] indices = new Integer[n];
+    for (int i = 0; i < n; i++) {
+      indices[i] = i;
+    }
+    
+    Arrays.sort(indices, (a, b) -> (imgW[b] * imgH[b]) - (imgW[a] * imgH[a]));
+    
+    for (int i = n - 1; i >= 0; i--) {
+      int index = indices[i];
+      if (imgW[index] > 0 && imgH[index] > 0) {
+        displayImageAt(imgX[index], imgY[index], tagImages[index], imgW[index], imgH[index]);
+      }
     }
   }
   
@@ -257,9 +304,8 @@ rect(600, 415, 150, 150);
   rect(miniX, miniY, miniW, miniH);
 
  // Example: display an image at coordinates (imgX, imgY) within the mini screen
-  if (demoImage != null && vis) {
-    displayImageAt(imgX, imgY, demoImage, imgW, imgH);
-  }
+ 
+
 
   
   // Label the mini screen
