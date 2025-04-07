@@ -195,7 +195,7 @@ fill(0, 0, 0);
 
   textSize(35);
     fill(0, 0, 0);
-    text("Speed Limit: " + goalSpeed + " cm/s", 800, 400);
+    text("Speed Limit: " + goalSpeed + " cm/s", 780, 420);
     if(leftAtNextJunc) {
     text("Turn Left Ahead", 800, 500); 
     image(left_img, 605, 420, leftimage.width/1.5, leftimage.height/1.5);
