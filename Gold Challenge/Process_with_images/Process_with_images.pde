@@ -44,6 +44,8 @@ int miniY = 275;
 int miniW = 320;
 int miniH = 240;
 
+int image_update_ticker = 0;
+
 boolean vis = false;
 
 PImage[] tagImages;
@@ -54,6 +56,8 @@ int imgW[] = {-1, -1, -1, -1};
 int imgH[] = {-1, -1, -1, -1};
 
 boolean newData = false;  // Global flag
+
+boolean leftAtNextJunc = true;
 
   int framesSinceLastData = 0;
   int maxFramesToPersist = 1;  // Adjust this to suit your needs
@@ -162,6 +166,9 @@ void setup() {
 }
 void draw() {
   
+image_update_ticker++;
+
+  
 background(173, 216, 230);  // Clear screen every frame
   
 fill(255, 255, 255);
@@ -178,17 +185,24 @@ rect(295, 145, 150, 100); //behind button stop
 
 
 fill(0, 0, 0);
-rect(600, 415, 150, 150);
+//rect(600, 415, 150, 150);
 
 
   image(mario, 0, 0, mario.width/6, mario.height/6);
   image(luigi, 350, 0, mario.width/4, mario.height/6); //both mario so they're the same height
   
   
-  image(leftimage, 605, 420, leftimage.width/1.5, leftimage.height/1.5);
+
   textSize(35);
     fill(0, 0, 0);
+    if(leftAtNextJunc) {
     text("Turn Left Ahead", 800, 500); 
+    image(left_img, 605, 420, leftimage.width/1.5, leftimage.height/1.5);
+  }
+    else {
+      text("Turn Right Ahead", 800, 500); 
+      image(right_img, 605, 420, leftimage.width/1.5, leftimage.height/1.5);
+    }
   //image(rightimage, 200, 300, leftimage.width, leftimage.height);
   /*
   if (present ==1) {
@@ -226,71 +240,90 @@ rect(600, 415, 150, 150);
   
   textSize(15);
   fill(0, 0, 0);
-  text("camera representation here", 100, 500);
 
 
 
-  boolean newData = false;
+ // Read and parse incoming data
+if (myClient.active()) {
+  String input_string = clean_reading();
   
-  if (myClient.active()) {
-    String input_string = clean_reading();
-    
-    if (input_string != null && input_string.equals("tag_packet")) {
-      String full_data = clean_reading();
-      if (full_data != null && full_data.length() > 0) {
-        // Process and update your global arrays as before
-        String[] tags = split(full_data, '|');
-        
-        for (int i = 0; i < 4; i++) {
-          imgX[i] = -1;
-          imgY[i] = -1;
-          imgW[i] = -1;
-          imgH[i] = -1;
-        }
-        
-        for (String tag : tags) {
-          String[] values = split(tag, ',');
-          if (values.length == 5) {
-            int tagID = int(values[0]);
-            int x = int(values[1]);
-            int y = int(values[2]);
-            int w = int(values[3]);
-            int h = int(values[4]);
-            
-            imgX[tagID - 1] = constrain(x - (w / 2), 0, miniW - w);
-            imgY[tagID - 1] = constrain(y - (h / 2), 0, miniH - h);
-            imgW[tagID - 1] = w;
-            imgH[tagID - 1] = h;
-            newData = true;
-          }
+  if (input_string.equals("speed_packet")) {
+      input_string = clean_reading();
+      String[] values = split(input_string, ',');  // Split by comma
+
+      if (values.length == 6) {  // Ensure we got the expected number of values
+          leftSpeed  = int(values[0]);
+          rightSpeed = int(values[1]);
+          leftPower  = int(values[2]);
+          rightPower = int(values[3]);
+          goalSpeed  = int(values[4]);
+          leftAtNextJunc = values[5].equals("1");  // Update the boolean
+
+          //println("Left Speed: " + leftSpeed + " Right Speed: " + rightSpeed +
+          //        " Left Power: " + leftPower + " Right Power: " + rightPower +
+          //        " Goal Speed: " + goalSpeed + " leftAtNextJunc: " + leftAtNextJunc);
+      }
+  }
+
+  if (input_string != null && input_string.equals("tag_packet")) {
+    String full_data = clean_reading();
+
+    if (full_data != null && full_data.length() > 0) {
+      String[] tags = split(full_data, '|');
+      //print(tags);
+      image_update_ticker = 0;
+      newData = true;
+      
+      
+      // Reset image data
+      for (int i = 0; i < 4; i++) {
+        imgX[i] = -1;
+        imgY[i] = -1;
+        imgW[i] = 0;
+        imgH[i] = 0;
+      }
+
+      // Fill in tag data
+      for (String tag : tags) {
+        String[] values = split(tag, ',');
+
+        if (values.length == 5) {
+          int tagID = int(values[0]);
+          int x = int(values[1]);
+          int y = int(values[2]);
+          int w = int(values[3]);
+          int h = int(values[4]);
+          
+          
+          imgX[tagID - 1] = constrain(x - (w / 2), 0, miniW - w);
+          imgY[tagID - 1] = constrain(y - (h / 2), 0, miniH - h);
+          imgW[tagID - 1] = w;
+          imgH[tagID - 1] = h;
         }
       }
     }
   }
-  
-    if (newData) {
-        framesSinceLastData = 0;
-    } else if (framesSinceLastData < maxFramesToPersist) {
-        framesSinceLastData++;  // Only increment if we haven't reached the limit
-    }
-  
-  // Only draw if we have new data or haven't exceeded the persistence threshold
-  if (framesSinceLastData <= maxFramesToPersist) {
-    int n = 4;
-    Integer[] indices = new Integer[n];
-    for (int i = 0; i < n; i++) {
-      indices[i] = i;
-    }
-    
-    Arrays.sort(indices, (a, b) -> (imgW[b] * imgH[b]) - (imgW[a] * imgH[a]));
-    
-    for (int i = n - 1; i >= 0; i--) {
-      int index = indices[i];
-      if (imgW[index] > 0 && imgH[index] > 0) {
-        displayImageAt(imgX[index], imgY[index], tagImages[index], imgW[index], imgH[index]);
-      }
-    }
+}
+
+if (image_update_ticker >= 30){
+ newData = false;
+}
+
+// Draw tag images unconditionally if size is positive
+int n = 4;
+Integer[] indices = new Integer[n];
+for (int i = 0; i < n; i++) {
+  indices[i] = i;
+}
+
+Arrays.sort(indices, (a, b) -> (imgW[b] * imgH[b]) - (imgW[a] * imgH[a]));
+
+for (int i = n - 1; i >= 0; i--) {
+  int index = indices[i];
+  if (imgW[index] > 0 && imgH[index] > 0 && newData) {
+    displayImageAt(imgX[index], imgY[index], tagImages[index], imgW[index], imgH[index]);
   }
+}
   
   // Update Gauge Cluster Values
   LSpeed_G.updateMeter(leftSpeed);

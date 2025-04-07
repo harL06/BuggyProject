@@ -456,10 +456,16 @@ void loop() {
           if (speedR > 255) speedR = 255;
           if (speedR < 0) speedR = 0;
 
-          // Send data packet to processing
+          // Send speed_packet including leftAtNextJunc state
           client.println("speed_packet");
-          String speed_data = String(round(leftSpeed)) + "," + String(round(rightSpeed)) + "," + String(speedL) + "," + String(speedR) + "," + String(set_goal_speed);
+          String speed_data = String(round(leftSpeed)) + "," + String(round(rightSpeed)) + "," +
+                              String(speedL) + "," + String(speedR) + "," +
+                              String(set_goal_speed) + "," +
+                              (leftAtNextJunc ? "1" : "0");
           client.println(speed_data);  // Send as a single packet
+          HALL_ticker = 0;
+          
+
           HALL_ticker = 0;
 
           prevTime = currentTime; // Update time reference
