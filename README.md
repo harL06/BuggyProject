@@ -14,6 +14,7 @@ The aim was to combine basic embedded control, sensing, and visual feedback rath
 
 - Arduino-based motor control
 - Sensor-driven buggy behaviour
+- PID control for smooth buggy movement
 - HuskyLens-based computer vision
 - Serial communication between Arduino and laptop
 - Processing visualisation of the buggy environment
@@ -37,13 +38,12 @@ The aim was to combine basic embedded control, sensing, and visual feedback rath
 ## Repository structure
 
 ```text
-/
-├── arduino/        # Arduino sketches and control logic
-├── processing/     # Visualisation code
-└── README.md
+bronze_challenge/    Early Arduino control, Processing visualisation, and wiring
+gold_challenge/      HuskyLens vision integration and final challenge code
+experiments/         Standalone tests for camera, PID, sensors, and Processing gauges
 ```
 
 ## Notes
 
-This was a college engineering project, so this repo shows the iterative development process rather than a polished software product. 
+This was a college engineering project, so this repo shows the iterative development process rather than a polished software product.
 The main value of the project was in integrating embedded control, sensors, computer vision, and visualisation under practical time constraints.
