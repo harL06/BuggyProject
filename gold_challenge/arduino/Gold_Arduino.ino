@@ -6,8 +6,8 @@ HUSKYLENS huskylens;
 
 //---WiFi Setup---//
 #include <WiFiS3.h>
-char ssid[] = "X14_custom_wifi";
-char pass[] = "X14iscool";
+char ssid[] = "BUGGY_WIFI_SSID";
+char pass[] = "BUGGY_WIFI_PASSWORD";
 WiFiServer server(5180);
 
 //--- WiFi Connecting LED Matrix --- //
